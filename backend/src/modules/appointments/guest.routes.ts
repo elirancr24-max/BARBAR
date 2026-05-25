@@ -50,9 +50,17 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
         role: 'CUSTOMER',
         customer: { create: { notes: 'הזמנה כאורח' } },
       },
+      include: { customer: true },
     });
   } else if (user.fullName !== dto.fullName) {
-    user = await prisma.user.update({ where: { id: user.id }, data: { fullName: dto.fullName } });
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { fullName: dto.fullName },
+      include: { customer: true },
+    });
+  }
+  if (!user) {
+    return res.status(500).json({ error: { code: 'INTERNAL', message: 'יצירת לקוח נכשלה' } });
   }
 
   const appointment = await createAppointment({
