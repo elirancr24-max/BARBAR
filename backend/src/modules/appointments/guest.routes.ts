@@ -74,7 +74,7 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
     service: appointment.service.name,
     employee: appointment.employee.user.fullName,
     priceAgorot: appointment.priceAgorot,
-    confirmation: `BB-${appointment.id.slice(-6).toUpperCase()}`,
+    confirmation: appointment.confirmationCode || `BB-${appointment.id.slice(-6).toUpperCase()}`,
   });
 });
 
