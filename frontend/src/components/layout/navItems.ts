@@ -1,4 +1,4 @@
-import { Scissors, LayoutDashboard, Calendar, Users, UserCog, BarChart3, Flag, ScrollText, Settings, Clock, CalendarX } from 'lucide-react';
+import { Scissors, LayoutDashboard, Calendar, Users, UserCog, BarChart3, Flag, ScrollText, Settings, Clock, CalendarX, MessageSquare } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -24,6 +24,7 @@ export const barberNav: NavItem[] = [
   { href: '/barber/availability', label: 'שעות זמינות', icon: Clock },
   { href: '/barber/time-off', label: 'חופשות', icon: CalendarX },
   { href: '/barber/customers', label: 'לקוחות', icon: Users },
+  { href: '/barber/messages', label: 'הודעות מוכנות', icon: MessageSquare },
 ];
 
 export const customerNav: NavItem[] = [

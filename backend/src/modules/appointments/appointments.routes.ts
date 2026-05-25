@@ -10,7 +10,7 @@ import {
   updateAppointment,
   deleteAppointment,
 } from './appointments.service';
-import { buildWhatsAppUrl, templates } from '../notifications/whatsapp';
+import { buildWhatsAppUrl, renderTemplate, type TemplateKey } from '../notifications/whatsapp';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { NotFound } from '../../lib/errors';
@@ -66,19 +66,100 @@ router.post('/', requireAuth, validate(createSchema), async (req, res) => {
   });
 
   await auditFromReq(req, 'appointment.create', 'Appointment', created.id, null, created);
-  res.status(201).json(created);
+
+  // For customers booking themselves — suggest barberWhatsapp; for staff walk-ins — skip
+  let barberWhatsapp: { url: string; message: string } | null = null;
+  if (req.user!.role === 'CUSTOMER') {
+    try {
+      const { enabled, message } = await renderTemplate(created.employeeId, 'newBookingToBarber', {
+        customerName: created.customer.fullName,
+        customerPhone: created.customer.phone,
+        serviceName: created.service.name,
+        employeeName: created.employee.user.fullName,
+        startAt: created.startAt,
+        businessName: env.BUSINESS_NAME,
+        notes: created.notes,
+      });
+      if (enabled && created.employee.user.phone) {
+        barberWhatsapp = {
+          url: buildWhatsAppUrl(created.employee.user.phone, message),
+          message,
+        };
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  res.status(201).json({ ...created, barberWhatsapp });
 });
 
 router.patch('/:id', requireAuth, validate(updateSchema), async (req, res) => {
   const { before, after } = await updateAppointment(req.params.id, req.user!, req.body);
   await auditFromReq(req, 'appointment.update', 'Appointment', after.id, before, after);
-  res.json(after);
+
+  // Decide which template to suggest based on patch
+  let suggestedKind: TemplateKey | null = null;
+  if (req.body.status === 'CANCELLED') suggestedKind = 'cancel';
+  else if (req.body.startAt || req.body.employeeId) suggestedKind = 'change';
+  else if (req.body.status === 'CONFIRMED' && before.status !== 'CONFIRMED') suggestedKind = 'confirm';
+
+  let whatsapp: { url: string; message: string; kind: TemplateKey } | null = null;
+  if (suggestedKind && (req.user!.role === 'ADMIN' || req.user!.role === 'BARBER')) {
+    const { enabled, message } = await renderTemplate(after.employeeId, suggestedKind, {
+      customerName: after.customer.fullName,
+      customerPhone: after.customer.phone,
+      serviceName: after.service.name,
+      employeeName: after.employee.user.fullName,
+      startAt: after.startAt,
+      businessName: env.BUSINESS_NAME,
+      notes: after.notes,
+    });
+    if (enabled) {
+      whatsapp = {
+        url: buildWhatsAppUrl(after.customer.phone, message),
+        message,
+        kind: suggestedKind,
+      };
+    }
+  }
+
+  res.json({ ...after, whatsapp });
 });
 
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res, next) => {
+  const beforeAppt = await prisma.appointment.findUnique({
+    where: { id: req.params.id },
+    include: {
+      service: true,
+      employee: { include: { user: true } },
+      customer: { select: { id: true, fullName: true, phone: true } },
+    },
+  });
+  if (!beforeAppt) return next(NotFound());
+
   const cancelled = await deleteAppointment(req.params.id, req.user!);
   await auditFromReq(req, 'appointment.delete', 'Appointment', cancelled.id, null, cancelled);
-  res.json(cancelled);
+
+  let whatsapp: { url: string; message: string; kind: TemplateKey } | null = null;
+  if (req.user!.role === 'ADMIN' || req.user!.role === 'BARBER') {
+    const { enabled, message } = await renderTemplate(beforeAppt.employeeId, 'cancel', {
+      customerName: beforeAppt.customer.fullName,
+      customerPhone: beforeAppt.customer.phone,
+      serviceName: beforeAppt.service.name,
+      employeeName: beforeAppt.employee.user.fullName,
+      startAt: beforeAppt.startAt,
+      businessName: env.BUSINESS_NAME,
+      notes: beforeAppt.notes,
+    });
+    if (enabled) {
+      whatsapp = {
+        url: buildWhatsAppUrl(beforeAppt.customer.phone, message),
+        message,
+        kind: 'cancel',
+      };
+    }
+  }
+
+  res.json({ ...cancelled, whatsapp });
 });
 
 // Check-in: mark customer as arrived (toggle)
@@ -179,13 +260,15 @@ router.post('/:id/whatsapp', requireAuth, requireRole('ADMIN', 'BARBER'), async 
   });
   if (!a) return next(NotFound());
 
-  const kind = (req.query.kind as 'confirm' | 'reminder' | 'cancel' | 'change') || 'confirm';
-  const message = templates[kind]({
+  const kind = (req.query.kind as TemplateKey) || 'confirm';
+  const { message } = await renderTemplate(a.employeeId, kind, {
     customerName: a.customer.fullName,
+    customerPhone: a.customer.phone,
     serviceName: a.service.name,
     employeeName: a.employee.user.fullName,
     startAt: a.startAt,
     businessName: env.BUSINESS_NAME,
+    notes: a.notes,
   });
   const url = buildWhatsAppUrl(a.customer.phone, message);
 

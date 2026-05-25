@@ -5,9 +5,85 @@ import { prisma } from '../../lib/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
-import { BadRequest, NotFound } from '../../lib/errors';
+import { BadRequest, NotFound, Forbidden } from '../../lib/errors';
+import {
+  defaultTemplates,
+  TEMPLATE_LABELS,
+  type TemplateKey,
+  type EmployeeTemplates,
+} from '../notifications/whatsapp';
 
 const router = Router();
+
+const TEMPLATE_KEYS: TemplateKey[] = ['confirm', 'reminder', 'cancel', 'change', 'newBookingToBarber'];
+
+const templatesSchema = z.object({
+  templates: z.record(
+    z.string(),
+    z.object({
+      enabled: z.boolean(),
+      template: z.string().max(2000),
+    }),
+  ),
+});
+
+async function resolveEmployeeForUser(userId: string, role: string, paramId: string) {
+  if (paramId === 'me') {
+    if (role !== 'BARBER') throw Forbidden();
+    const emp = await prisma.employee.findUnique({ where: { userId } });
+    if (!emp) throw NotFound('פרופיל עובד לא נמצא');
+    return emp;
+  }
+  const emp = await prisma.employee.findUnique({ where: { id: paramId } });
+  if (!emp) throw NotFound('עובד לא נמצא');
+  if (role === 'BARBER' && emp.userId !== userId) throw Forbidden();
+  return emp;
+}
+
+// GET templates (defaults merged with employee overrides)
+router.get('/:id/templates', requireAuth, requireRole('ADMIN', 'BARBER'), async (req, res, next) => {
+  try {
+    const emp = await resolveEmployeeForUser(req.user!.sub, req.user!.role, req.params.id);
+    const stored = (emp.messageTemplates as EmployeeTemplates | null) ?? {};
+    const merged = TEMPLATE_KEYS.map((key) => {
+      const cfg = stored[key];
+      return {
+        key,
+        label: TEMPLATE_LABELS[key].label,
+        description: TEMPLATE_LABELS[key].description,
+        toCustomer: TEMPLATE_LABELS[key].toCustomer,
+        enabled: cfg?.enabled !== false,
+        template: cfg?.template?.trim() || defaultTemplates[key],
+        defaultTemplate: defaultTemplates[key],
+        isCustomized: !!cfg?.template?.trim() && cfg.template.trim() !== defaultTemplates[key],
+      };
+    });
+    res.json({ templates: merged });
+  } catch (e) { next(e); }
+});
+
+router.put('/:id/templates', requireAuth, requireRole('ADMIN', 'BARBER'), validate(templatesSchema), async (req, res, next) => {
+  try {
+    const emp = await resolveEmployeeForUser(req.user!.sub, req.user!.role, req.params.id);
+    const { templates } = req.body as { templates: Record<string, { enabled: boolean; template: string }> };
+    // Validate keys
+    const cleaned: EmployeeTemplates = {};
+    for (const key of TEMPLATE_KEYS) {
+      const cfg = templates[key];
+      if (!cfg) continue;
+      cleaned[key] = {
+        enabled: !!cfg.enabled,
+        template: (cfg.template || '').slice(0, 2000),
+      };
+    }
+    const updated = await prisma.employee.update({
+      where: { id: emp.id },
+      data: { messageTemplates: cleaned as object },
+    });
+    await auditFromReq(req, 'employee.templates.update', 'Employee', emp.id, emp.messageTemplates, updated.messageTemplates);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
 
 const createEmployeeSchema = z.object({
   email: z.string().email(),

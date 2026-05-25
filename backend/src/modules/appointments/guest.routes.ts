@@ -6,6 +6,8 @@ import { prisma } from '../../lib/prisma';
 import { validate } from '../../middleware/validate';
 import { createAppointment } from './appointments.service';
 import { writeAudit } from '../../middleware/audit';
+import { buildWhatsAppUrl, renderTemplate } from '../notifications/whatsapp';
+import { env } from '../../config/env';
 
 const router = Router();
 
@@ -67,14 +69,36 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
     after: { id: appointment.id, startAt: appointment.startAt },
   });
 
+  // Build WhatsApp link FROM customer TO barber notifying about the new booking
+  let barberWhatsapp: { url: string; message: string } | null = null;
+  try {
+    const { enabled, message } = await renderTemplate(appointment.employeeId, 'newBookingToBarber', {
+      customerName: appointment.customer.fullName,
+      customerPhone: appointment.customer.phone,
+      serviceName: appointment.service.name,
+      employeeName: appointment.employee.user.fullName,
+      startAt: appointment.startAt,
+      businessName: env.BUSINESS_NAME,
+      notes: appointment.notes,
+    });
+    if (enabled && appointment.employee.user.phone) {
+      barberWhatsapp = {
+        url: buildWhatsAppUrl(appointment.employee.user.phone, message),
+        message,
+      };
+    }
+  } catch { /* non-fatal */ }
+
   res.status(201).json({
     id: appointment.id,
     startAt: appointment.startAt,
     endAt: appointment.endAt,
     service: appointment.service.name,
     employee: appointment.employee.user.fullName,
+    employeePhone: appointment.employee.user.phone,
     priceAgorot: appointment.priceAgorot,
     confirmation: appointment.confirmationCode || `BB-${appointment.id.slice(-6).toUpperCase()}`,
+    barberWhatsapp,
   });
 });
 

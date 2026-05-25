@@ -92,7 +92,7 @@ export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (input: { id: string; status?: string; notes?: string }) =>
+    mutationFn: async (input: { id: string; status?: string; notes?: string; startAt?: string }) =>
       (await api.patch(`/appointments/${input.id}`, input)).data,
     onSuccess: (data) => {
       toast.success('עודכן');
@@ -101,12 +101,18 @@ export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
         setSelected({ ...selected, ...data });
       }
       setEditingNotes(false);
+      if (data?.whatsapp?.url) window.open(data.whatsapp.url, '_blank');
     },
   });
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/appointments/${id}`)).data,
-    onSuccess: () => { toast.success('התור בוטל'); setSelected(null); qc.invalidateQueries({ queryKey: ['appointments'] }); },
+    onSuccess: (data) => {
+      toast.success('התור בוטל');
+      setSelected(null);
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+      if (data?.whatsapp?.url) window.open(data.whatsapp.url, '_blank');
+    },
   });
 
   const whatsappMutation = useMutation({

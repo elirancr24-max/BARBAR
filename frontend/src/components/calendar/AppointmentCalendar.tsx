@@ -54,10 +54,21 @@ export function AppointmentCalendar({ editable = true, employeeIdFilter }: Props
     },
   });
 
+  const maybeOpenWhatsApp = (data: { whatsapp?: { url: string; kind: string } | null }) => {
+    if (data?.whatsapp?.url) {
+      // Open in a new tab — user can review the prepared message and send
+      window.open(data.whatsapp.url, '_blank');
+    }
+  };
+
   const updateMutation = useMutation({
     mutationFn: async (input: { id: string; startAt?: string; status?: string }) =>
       (await api.patch(`/appointments/${input.id}`, input)).data,
-    onSuccess: () => { toast.success('עודכן'); qc.invalidateQueries({ queryKey: ['appointments'] }); },
+    onSuccess: (data) => {
+      toast.success('עודכן');
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+      maybeOpenWhatsApp(data);
+    },
     onError: (e: unknown) => {
       const err = e as { response?: { data?: { error?: { message?: string } } } };
       toast.error(err.response?.data?.error?.message || 'שגיאה');
@@ -67,7 +78,12 @@ export function AppointmentCalendar({ editable = true, employeeIdFilter }: Props
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/appointments/${id}`)).data,
-    onSuccess: () => { toast.success('בוטל'); setSelected(null); qc.invalidateQueries({ queryKey: ['appointments'] }); },
+    onSuccess: (data) => {
+      toast.success('בוטל');
+      setSelected(null);
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+      maybeOpenWhatsApp(data);
+    },
   });
 
   const whatsappMutation = useMutation({
