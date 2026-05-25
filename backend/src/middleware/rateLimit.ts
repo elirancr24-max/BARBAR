@@ -1,8 +1,9 @@
-import rateLimit, { type Options } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { redis, isUsingRealRedis } from '../lib/redis';
 
-function withStore(): Pick<Options, 'store'> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function withStore(): Record<string, any> {
   if (!isUsingRealRedis) return {}; // default memory store
   return {
     store: new RedisStore({

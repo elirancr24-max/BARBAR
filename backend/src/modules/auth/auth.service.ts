@@ -70,8 +70,8 @@ export async function logout(refreshToken: string) {
   await prisma.refreshToken.updateMany({ where: { tokenHash }, data: { revoked: true } });
 }
 
-async function issueTokens(userId: string, email: string, role: 'ADMIN' | 'BARBER' | 'CUSTOMER', deviceInfo?: string) {
-  const accessToken = signAccessToken({ sub: userId, email, role });
+async function issueTokens(userId: string, email: string, role: string, deviceInfo?: string) {
+  const accessToken = signAccessToken({ sub: userId, email, role: role as 'ADMIN' | 'BARBER' | 'CUSTOMER' });
   const refreshToken = signRefreshToken({ sub: userId });
 
   await prisma.refreshToken.create({
