@@ -229,3 +229,56 @@ cp frontend/.env.example frontend/.env.local
 | **סה״כ** | **$0** | **~$52** |
 
 ל-Production אמיתי של מספרה — $52 לחודש זה זול מאוד עבור מערכת ניהול מלאה.
+
+---
+
+## Push Notifications setup
+
+The app uses the standard Web Push protocol (VAPID). One-time setup:
+
+### 1. Generate VAPID keys (locally, once)
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+You'll get two base64url strings: a public key and a private key. Keep these — the private key is a secret.
+
+### 2. Backend env vars (Railway)
+
+Add three variables to the backend service:
+
+| Key | Value |
+|-----|-------|
+| `VAPID_PUBLIC_KEY` | the generated public key |
+| `VAPID_PRIVATE_KEY` | the generated private key (keep secret) |
+| `VAPID_SUBJECT` | `mailto:bar@example.com` (a contact email or https URL) |
+
+If any of these is missing the backend logs a warning at startup and gracefully no-ops on all push sends — nothing else breaks.
+
+### 3. Frontend env var (Vercel)
+
+Add to the frontend project:
+
+| Key | Value |
+|-----|-------|
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | **same value as `VAPID_PUBLIC_KEY` above** |
+
+(The current frontend reads the key from `GET /api/v1/push/vapid-public-key`, so this is optional but useful as a fallback / for offline builds.)
+
+### 4. Enable notifications in the browser
+
+After redeploy:
+
+1. Admin or barber logs in and opens the dashboard / calendar.
+2. Clicks the **🔔 הפעל התראות** button (top right of the page).
+3. Browser asks for permission → click "Allow".
+4. Done. From now on:
+   - Every new appointment triggers an instant push to all ADMIN + BARBER users.
+   - Every 30 minutes a reminder job scans for appointments 23–25 hours away and sends a single push with a wa.me link to send the customer a WhatsApp reminder.
+
+### Notes
+
+- The service worker (`/sw.js`) handles `push` and `notificationclick` events — clicking a notification focuses an existing tab or opens the URL in the payload.
+- Subscriptions are stored per-user in the `PushSubscription` table. Dead endpoints (HTTP 410 from the push service) are deleted automatically.
+- Reminders are dedup-safe via the `Appointment.reminderSentAt` column — each appointment is reminded at most once.

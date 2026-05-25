@@ -12,6 +12,7 @@ import { api } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatAgorot, formatDateHe, formatTime } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface Appointment {
   id: string;
@@ -40,6 +41,7 @@ interface Props {
 
 export function AppointmentCalendar({ editable = true, employeeIdFilter }: Props) {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [selected, setSelected] = useState<Appointment | null>(null);
 
   const { data: appts = [] } = useQuery({
@@ -197,7 +199,10 @@ export function AppointmentCalendar({ editable = true, employeeIdFilter }: Props
                 </Button>
               )}
               {selected.status !== 'CANCELLED' && (
-                <Button variant="destructive" className="col-span-2" onClick={() => confirm('לבטל את התור?') && cancelMutation.mutate(selected.id)}>
+                <Button variant="destructive" className="col-span-2" onClick={async () => {
+                  const ok = await confirm({ title: 'לבטל את התור?', confirmText: 'כן, בטל תור', variant: 'destructive' });
+                  if (ok) cancelMutation.mutate(selected.id);
+                }}>
                   <X className="w-4 h-4 ms-1" /> בטל תור
                 </Button>
               )}

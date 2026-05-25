@@ -6,6 +6,7 @@ import { logger } from './lib/logger';
 import { env } from './config/env';
 import { redis } from './lib/redis';
 import { prisma } from './lib/prisma';
+import { startReminderJob } from './lib/reminders';
 
 async function start() {
   const app = createApp();
@@ -18,6 +19,7 @@ async function start() {
   server.listen(env.PORT, () => {
     logger.info(`🚀 BarBar API listening on http://localhost:${env.PORT}`);
     logger.info(`📚 Swagger UI: http://localhost:${env.PORT}/docs`);
+    startReminderJob();
   });
 
   const shutdown = async (signal: string) => {

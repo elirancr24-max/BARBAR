@@ -143,9 +143,14 @@ export default function BookPage() {
                 <Row label="מועד" value={new Date(result.startAt).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} />
                 <Row label="לתשלום" value={formatAgorot(result.priceAgorot)} />
               </div>
-              <div className="flex gap-3">
-                <Button variant="outline" asChild className="flex-1"><Link href="/">חזרה לדף הבית</Link></Button>
-                <Button variant="gold" onClick={() => { setResult(null); setStep(0); setServiceId(null); setEmployeeId(null); setSlot(null); setLockId(null); setContact({ fullName: '', phone: '', email: '', notes: '' }); }} className="flex-1">תור נוסף</Button>
+              <div className="space-y-3">
+                <Button variant="gold" asChild className="w-full h-12">
+                  <Link href={`/booking/${result.confirmation}`}>צפה / בטל את התור שלי</Link>
+                </Button>
+                <div className="flex gap-3">
+                  <Button variant="outline" asChild className="flex-1"><Link href="/">חזרה לדף הבית</Link></Button>
+                  <Button variant="ghost" onClick={() => { setResult(null); setStep(0); setServiceId(null); setEmployeeId(null); setSlot(null); setLockId(null); setContact({ fullName: '', phone: '', email: '', notes: '' }); }} className="flex-1">תור נוסף</Button>
+                </div>
               </div>
             </Card>
           </motion.div>

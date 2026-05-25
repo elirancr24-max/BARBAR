@@ -139,7 +139,10 @@ router.post('/:id/pay', requireAuth, requireRole('ADMIN', 'BARBER'),
     if (customer) {
       await prisma.customer.update({
         where: { id: customer.id },
-        data: { totalVisits: { increment: 1 } },
+        data: {
+          totalVisits: { increment: 1 },
+          loyaltyPoints: { increment: 1 },
+        },
       });
     }
 

@@ -2,13 +2,67 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Calendar, Phone, MapPin, Clock, Instagram, Facebook } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Calendar, Phone, MapPin, Clock, Instagram, Facebook, Star, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
-import { BrandMark } from '@/components/brand/BrandMark';
 import { PhotoMark } from '@/components/brand/PhotoMark';
+import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  customerName: string;
+  createdAt: string;
+}
+
+interface GalleryItem {
+  id: string;
+  url: string;
+  kind?: string | null;
+  service?: { name: string } | null;
+  employee?: { user?: { fullName: string } } | null;
+}
+
+function relativeHe(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const day = 24 * 60 * 60 * 1000;
+  if (diff < day) return 'היום';
+  const d = Math.floor(diff / day);
+  if (d < 7) return `לפני ${d} ימים`;
+  if (d < 30) return `לפני ${Math.floor(d / 7)} שבועות`;
+  if (d < 365) return `לפני ${Math.floor(d / 30)} חודשים`;
+  return `לפני ${Math.floor(d / 365)} שנים`;
+}
 
 export default function LandingPage() {
+  const { data: gallery = [] } = useQuery({
+    queryKey: ['gallery', 'public'],
+    queryFn: async () => {
+      try {
+        return (await api.get<GalleryItem[]>('/gallery')).data;
+      } catch {
+        return [];
+      }
+    },
+    retry: false,
+  });
+
+  const { data: reviews = [] } = useQuery({
+    queryKey: ['reviews', 'public'],
+    queryFn: async () => {
+      try {
+        return (await api.get<Review[]>('/reviews/public')).data;
+      } catch {
+        return [];
+      }
+    },
+    retry: false,
+  });
+
   return (
     <div className="relative min-h-dvh flex flex-col bg-background overflow-hidden pb-20 lg:pb-0">
       {/* Decorative ambient gradient */}
@@ -44,7 +98,7 @@ export default function LandingPage() {
       </header>
 
       {/* Center hero */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center py-10">
+      <main className="relative z-10 flex flex-col items-center justify-center px-6 text-center py-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -119,12 +173,118 @@ export default function LandingPage() {
         </motion.div>
       </main>
 
+      {/* Gallery section */}
+      {gallery.length > 0 && (
+        <section className="relative z-10 px-6 lg:px-12 py-16 lg:py-20">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="font-display font-black text-3xl sm:text-4xl mb-2">העבודות שלנו</h2>
+              <p className="text-muted-foreground">תספורות אחרונות מהמספרה</p>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+              {gallery.slice(0, 9).map((g, i) => (
+                <motion.div
+                  key={g.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ delay: i * 0.04, duration: 0.3 }}
+                  className="relative aspect-square overflow-hidden rounded-xl bg-secondary group"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={g.url}
+                    alt={g.service?.name || 'תספורת'}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  {(g.service?.name || g.employee?.user?.fullName) && (
+                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="text-xs font-medium truncate">{g.service?.name}</div>
+                      {g.employee?.user?.fullName && (
+                        <div className="text-[10px] opacity-80 truncate">{g.employee.user.fullName}</div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Reviews section */}
+      {reviews.length > 0 && (
+        <section className="relative z-10 px-6 lg:px-12 py-16 lg:py-20 bg-secondary/20">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="font-display font-black text-3xl sm:text-4xl mb-2">מה הלקוחות אומרים</h2>
+              <p className="text-muted-foreground">דירוגים אמיתיים מלקוחות אמיתיים</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {reviews.slice(0, 3).map((r, i) => (
+                <motion.div
+                  key={r.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ delay: i * 0.06, duration: 0.3 }}
+                >
+                  <Card className="p-5 h-full flex flex-col">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          className={cn(
+                            'w-4 h-4',
+                            n <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30',
+                          )}
+                        />
+                      ))}
+                    </div>
+                    {r.comment && (
+                      <p className="text-sm mt-3 flex-1 leading-relaxed text-foreground/90 line-clamp-4">&ldquo;{r.comment}&rdquo;</p>
+                    )}
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full gold-gradient text-white flex items-center justify-center text-xs font-bold shrink-0">
+                          {r.customerName.charAt(0)}
+                        </div>
+                        <span className="font-medium text-sm truncate">{r.customerName}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground tabular-nums shrink-0">{relativeHe(r.createdAt)}</span>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+            <div className="text-center mt-8">
+              <Button asChild variant="outline">
+                <Link href="/reviews">
+                  ראה הכל
+                  <ArrowLeft className="w-4 h-4 me-2" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Bottom barber-pole stripe */}
       <div className="relative z-10 h-2 barber-accent opacity-60" aria-hidden />
 
       {/* Footer */}
-      <footer className="relative z-10 px-6 py-4 text-center text-xs text-muted-foreground/70">
-        © 2026 בר אברג׳יל · Hair Design · <Link href="/login" className="hover:text-primary transition-colors">כניסת צוות</Link>
+      <footer className="relative z-10 px-6 py-5 text-center text-xs text-muted-foreground/70 space-y-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link href="/about" className="hover:text-primary transition-colors">אודות</Link>
+          <span aria-hidden>·</span>
+          <Link href="/reviews" className="hover:text-primary transition-colors">ביקורות</Link>
+          <span aria-hidden>·</span>
+          <Link href="/book" className="hover:text-primary transition-colors">קבע תור</Link>
+          <span aria-hidden>·</span>
+          <Link href="/login" className="hover:text-primary transition-colors">כניסת צוות</Link>
+        </div>
+        <div>© 2026 בר אברג׳יל · Hair Design</div>
       </footer>
     </div>
   );

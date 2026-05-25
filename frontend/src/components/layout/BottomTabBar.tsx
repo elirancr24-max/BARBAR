@@ -21,7 +21,8 @@ export function BottomTabBar() {
     pathname.startsWith('/barber') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
-    pathname.startsWith('/offline')
+    pathname.startsWith('/offline') ||
+    pathname.startsWith('/booking')
   ) return null;
 
   return (

@@ -15,6 +15,7 @@ import { api } from '@/lib/api';
 import { cn, formatAgorot, formatTime } from '@/lib/utils';
 import { NewAppointmentDialog } from './NewAppointmentDialog';
 import { PaymentDialog } from './PaymentDialog';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface Appointment {
   id: string;
@@ -59,6 +60,7 @@ function formatDayHeader(d: Date): string {
 
 export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [date, setDate] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
   // Default to list view on mobile (better UX on narrow screens)
   const initialView: ViewMode = typeof window !== 'undefined' && window.innerWidth < 1024 ? 'list' : 'timeline';
@@ -403,7 +405,10 @@ export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
                         <RotateCcw className="w-4 h-4 ms-1" /> תור חוזר 4 שבועות
                       </Button>
                       {selected.status !== 'CANCELLED' && (
-                        <Button variant="destructive" className="col-span-2" onClick={() => confirm('לבטל את התור?') && cancelMutation.mutate(selected.id)}>
+                        <Button variant="destructive" className="col-span-2" onClick={async () => {
+                          const ok = await confirm({ title: 'לבטל את התור?', description: 'הלקוח לא יקבל הודעה אוטומטית.', confirmText: 'כן, בטל תור', variant: 'destructive' });
+                          if (ok) cancelMutation.mutate(selected.id);
+                        }}>
                           <X className="w-4 h-4 ms-1" /> בטל תור
                         </Button>
                       )}

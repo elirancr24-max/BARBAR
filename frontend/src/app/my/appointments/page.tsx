@@ -10,6 +10,7 @@ import { ListSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { api } from '@/lib/api';
 import { formatAgorot, formatDateHe } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface Appointment {
   id: string;
@@ -30,6 +31,7 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 
 export default function MyAppointmentsPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const { data: appts = [], isLoading } = useQuery({
     queryKey: ['appointments', 'mine'],
     queryFn: async () => (await api.get<Appointment[]>('/appointments')).data,
@@ -90,7 +92,10 @@ export default function MyAppointmentsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-primary text-lg">{formatAgorot(a.priceAgorot)}</span>
-                      <Button variant="ghost" size="sm" onClick={() => confirm('לבטל תור?') && cancelMut.mutate(a.id)}>
+                      <Button variant="ghost" size="sm" onClick={async () => {
+                        const ok = await confirm({ title: 'לבטל תור?', description: 'התור יבוטל והסלוט ישתחרר.', confirmText: 'כן, בטל', variant: 'destructive' });
+                        if (ok) cancelMut.mutate(a.id);
+                      }}>
                         <X className="w-4 h-4 ms-1" /> בטל
                       </Button>
                     </div>

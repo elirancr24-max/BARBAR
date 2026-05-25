@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface Employee {
   id: string;
@@ -20,6 +21,7 @@ interface Employee {
 
 export default function EmployeesPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', bio: '', color: '#c9a961' });
 
@@ -91,7 +93,10 @@ export default function EmployeesPage() {
                   <div className="text-sm text-muted-foreground">{e.user.email}</div>
                   <div className="text-sm text-muted-foreground">{e.user.phone}</div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => confirm('להסיר ספר זה?') && deleteMut.mutate(e.id)}>
+                <Button variant="ghost" size="icon" onClick={async () => {
+                  const ok = await confirm({ title: 'להסיר ספר זה?', description: 'הספר יוסר מהמערכת.', confirmText: 'כן, הסר', variant: 'destructive' });
+                  if (ok) deleteMut.mutate(e.id);
+                }}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </CardContent>

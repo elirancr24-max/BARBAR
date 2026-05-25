@@ -98,3 +98,54 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
+
+// Web Push: show notification
+self.addEventListener('push', (event) => {
+  let payload = { title: 'BarBar', body: '', url: '/' };
+  try {
+    if (event.data) {
+      payload = { ...payload, ...event.data.json() };
+    }
+  } catch {
+    if (event.data) payload.body = event.data.text();
+  }
+
+  const options = {
+    body: payload.body,
+    icon: payload.icon || '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: payload.tag,
+    data: { url: payload.url || '/' },
+    dir: 'rtl',
+    lang: 'he',
+  };
+
+  event.waitUntil(self.registration.showNotification(payload.title, options));
+});
+
+// Notification click: focus existing window or open the URL
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        try {
+          const clientUrl = new URL(client.url);
+          if (clientUrl.origin === self.location.origin && 'focus' in client) {
+            if ('navigate' in client && targetUrl) {
+              return client.navigate(targetUrl).then(() => client.focus());
+            }
+            return client.focus();
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+      return undefined;
+    }),
+  );
+});

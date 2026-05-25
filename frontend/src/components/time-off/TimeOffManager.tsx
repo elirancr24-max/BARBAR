@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { api } from '@/lib/api';
 import { useAuth } from '@/store/auth';
 import { cn, formatDateHe } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface TimeOff {
   id: string;
@@ -36,6 +37,7 @@ function isoNow(): string {
 export function TimeOffManager({ scope }: Props) {
   const qc = useQueryClient();
   const user = useAuth((s) => s.user);
+  const confirm = useConfirm();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({
     employeeId: user?.employee?.id || '',
@@ -255,7 +257,10 @@ export function TimeOffManager({ scope }: Props) {
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => confirm('להסיר חסימה?') && deleteMut.mutate(t.id)}>
+                <Button variant="ghost" size="icon" onClick={async () => {
+                  const ok = await confirm({ title: 'להסיר חסימה?', description: 'הזמנים יחזרו להיות פנויים להזמנה.', confirmText: 'כן, הסר', variant: 'destructive' });
+                  if (ok) deleteMut.mutate(t.id);
+                }}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </Card>

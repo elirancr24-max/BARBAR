@@ -1,9 +1,32 @@
+import crypto from 'crypto';
 import { prisma } from '../../lib/prisma';
 import type { AppointmentStatus } from '../../types/db';
 import { BadRequest, Conflict, NotFound, Forbidden } from '../../lib/errors';
 import { emitAppointmentEvent } from '../../lib/socket';
 import { forceReleaseAfterBooking } from './locking.service';
 import { invalidateAvailability } from '../availability/availability.service';
+import { sendPushToRole } from '../../lib/push';
+import { logger } from '../../lib/logger';
+
+function generateConfirmationCode(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.randomBytes(6);
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += alphabet[bytes[i] % alphabet.length];
+  }
+  return `BB-${code}`;
+}
+
+async function uniqueConfirmationCode(): Promise<string> {
+  for (let i = 0; i < 5; i++) {
+    const code = generateConfirmationCode();
+    const exists = await prisma.appointment.findUnique({ where: { confirmationCode: code } });
+    if (!exists) return code;
+  }
+  // Fall back with extra entropy
+  return `BB-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+}
 
 interface CreateInput {
   customerUserId: string;
@@ -23,6 +46,7 @@ export async function createAppointment(input: CreateInput) {
   if (!employee) throw BadRequest('עובד לא נמצא');
 
   const endAt = new Date(input.startAt.getTime() + service.durationMin * 60_000);
+  const confirmationCode = await uniqueConfirmationCode();
 
   // Conflict check within transaction
   const created = await prisma.$transaction(async (tx) => {
@@ -45,6 +69,7 @@ export async function createAppointment(input: CreateInput) {
         priceAgorot: service.priceAgorot,
         notes: input.notes,
         status: 'PENDING',
+        confirmationCode,
       },
       include: {
         service: true,
@@ -63,6 +88,32 @@ export async function createAppointment(input: CreateInput) {
     customerId: created.customerId,
     appointment: created,
   });
+
+  // Fire-and-forget push notifications to staff
+  try {
+    const timeStr = created.startAt.toLocaleString('he-IL', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Jerusalem',
+    });
+    const customerName = created.customer?.fullName ?? 'לקוח';
+    const payload = {
+      title: '🆕 תור חדש',
+      body: `${customerName} · ${created.service.name} · ${timeStr}`,
+      url: '/admin/calendar',
+      tag: `appointment-${created.id}`,
+    };
+    void sendPushToRole('BARBER', payload).catch((err) =>
+      logger.warn({ err }, 'Push to BARBER failed'),
+    );
+    void sendPushToRole('ADMIN', payload).catch((err) =>
+      logger.warn({ err }, 'Push to ADMIN failed'),
+    );
+  } catch (err) {
+    logger.warn({ err }, 'Failed to dispatch new-appointment push');
+  }
 
   return created;
 }

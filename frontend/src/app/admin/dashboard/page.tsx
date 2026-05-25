@@ -9,6 +9,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { TodaySchedule } from '@/components/dashboard/TodaySchedule';
 import { NextAppointment } from '@/components/dashboard/NextAppointment';
 import { BirthdaysWidget } from '@/components/dashboard/BirthdaysWidget';
+import { EnablePushButton } from '@/components/pwa/EnablePushButton';
 import { api } from '@/lib/api';
 import { formatAgorot } from '@/lib/utils';
 
@@ -46,6 +47,9 @@ export default function AdminDashboardPage() {
     <>
       <TopBar title="דשבורד" subtitle="סקירה של היום והחודש" />
       <div className="p-4 lg:p-6 space-y-6 page-enter">
+        <div className="flex justify-end">
+          <EnablePushButton />
+        </div>
         <NextAppointment />
 
         {/* KPIs */}

@@ -11,11 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { formatAgorot } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface Service { id: string; name: string; description?: string|null; durationMin: number; priceAgorot: number; color: string; }
 
 export default function ServicesPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [show, setShow] = useState(false);
   const [form, setForm] = useState({ name: '', description: '', durationMin: 30, priceAgorot: 8000, color: '#0ea5e9' });
 
@@ -67,7 +69,10 @@ export default function ServicesPage() {
             <Card key={s.id}><CardContent className="p-5">
               <div className="flex justify-between items-start mb-2">
                 <div className="font-semibold text-lg">{s.name}</div>
-                <Button variant="ghost" size="icon" onClick={() => confirm('להסיר שירות זה?') && deleteMut.mutate(s.id)}>
+                <Button variant="ghost" size="icon" onClick={async () => {
+                  const ok = await confirm({ title: 'להסיר שירות זה?', description: 'השירות יוסר מהמערכת.', confirmText: 'כן, הסר', variant: 'destructive' });
+                  if (ok) deleteMut.mutate(s.id);
+                }}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </div>

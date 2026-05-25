@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
+import { LoyaltyCard } from '@/components/customers/LoyaltyCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { api } from '@/lib/api';
@@ -26,6 +27,7 @@ interface Customer {
   notes: string | null;
   tags: string[];
   totalVisits: number;
+  loyaltyPoints: number;
   user: { id: string; fullName: string; email: string; phone: string; createdAt: string; birthday?: string | null };
 }
 
@@ -199,6 +201,9 @@ export default function CustomerDetailPage({ params }: Props) {
                 </div>
               </div>
             </Card>
+
+            {/* Loyalty punch card */}
+            <LoyaltyCard customerId={customer.id} points={customer.loyaltyPoints ?? 0} />
 
             {/* Quick rebook + contact */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

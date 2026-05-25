@@ -24,6 +24,10 @@ const envSchema = z.object({
   BUSINESS_NAME: z.string().default('BarBar'),
   BUSINESS_PHONE: z.string().default('972500000000'),
   BUSINESS_TIMEZONE: z.string().default('Asia/Jerusalem'),
+
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
