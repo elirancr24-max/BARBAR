@@ -15,7 +15,7 @@ import {
 
 const router = Router();
 
-const TEMPLATE_KEYS: TemplateKey[] = ['confirm', 'reminder', 'cancel', 'change', 'newBookingToBarber'];
+const TEMPLATE_KEYS: TemplateKey[] = ['confirm', 'reminder', 'cancel', 'change', 'newBookingToBarber', 'reviewRequest', 'slotAvailable'];
 
 const templatesSchema = z.object({
   templates: z.record(

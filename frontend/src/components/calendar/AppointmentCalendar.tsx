@@ -78,11 +78,22 @@ export function AppointmentCalendar({ editable = true, employeeIdFilter }: Props
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/appointments/${id}`)).data,
-    onSuccess: (data) => {
+    onSuccess: (data: { whatsapp?: { url: string; kind: string } | null; waitlistMatches?: Array<{ id: string; customerName: string; whatsappUrl: string }> }) => {
       toast.success('בוטל');
       setSelected(null);
       qc.invalidateQueries({ queryKey: ['appointments'] });
       maybeOpenWhatsApp(data);
+      // If there are waitlist customers who match this freed slot — show toast with action
+      if (data?.waitlistMatches && data.waitlistMatches.length > 0) {
+        const match = data.waitlistMatches[0];
+        toast(`🔔 ${data.waitlistMatches.length} לקוחות ברשימת המתנה תואמים את הסלוט הזה`, {
+          duration: 12000,
+          action: {
+            label: `שלח ל-${match.customerName}`,
+            onClick: () => window.open(match.whatsappUrl, '_blank'),
+          },
+        });
+      }
     },
   });
 

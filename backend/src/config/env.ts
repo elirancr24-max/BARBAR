@@ -24,6 +24,7 @@ const envSchema = z.object({
   BUSINESS_NAME: z.string().default('BarBar'),
   BUSINESS_PHONE: z.string().default('972500000000'),
   BUSINESS_TIMEZONE: z.string().default('Asia/Jerusalem'),
+  PUBLIC_URL: z.string().default('https://barbar2026.vercel.app'),
 
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),

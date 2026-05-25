@@ -28,7 +28,9 @@ export type TemplateKey =
   | 'reminder'
   | 'cancel'
   | 'change'
-  | 'newBookingToBarber';
+  | 'newBookingToBarber'
+  | 'reviewRequest'
+  | 'slotAvailable';
 
 export interface TmplCtx {
   customerName: string;
@@ -38,6 +40,8 @@ export interface TmplCtx {
   startAt: Date;
   businessName: string;
   notes?: string | null;
+  reviewLink?: string;
+  bookingLink?: string;
 }
 
 export const TEMPLATE_LABELS: Record<TemplateKey, { label: string; description: string; toCustomer: boolean }> = {
@@ -66,6 +70,16 @@ export const TEMPLATE_LABELS: Record<TemplateKey, { label: string; description: 
     description: 'נשלח אליך (הספר) כשלקוח קובע תור חדש',
     toCustomer: false,
   },
+  reviewRequest: {
+    label: 'בקשת ביקורת',
+    description: 'נשלח ללקוח אחרי שהתור הושלם — בקשת דירוג',
+    toCustomer: true,
+  },
+  slotAvailable: {
+    label: 'תור פנוי לרשימת המתנה',
+    description: 'נשלח ללקוח שברשימת המתנה כשמתפנה תור',
+    toCustomer: true,
+  },
 };
 
 // Built-in defaults — used when employee hasn't customized
@@ -80,6 +94,10 @@ export const defaultTemplates: Record<TemplateKey, string> = {
     'שלום {customerName} 👋\nהתור שלך עודכן לזמן חדש:\n\n📅 {dateTime}\n👤 ספר: {employeeName}\n💈 שירות: {serviceName}\n\nנתראה ב-{businessName}!',
   newBookingToBarber:
     '💈 תור חדש נקבע!\n\n👤 לקוח: {customerName}\n📞 טלפון: {customerPhone}\n💼 שירות: {serviceName}\n📅 {dateTime}\n\n— {businessName}',
+  reviewRequest:
+    'שלום {customerName} 🙏\nתודה שבחרת ב-{businessName}!\nנשמח אם תוכל לדרג את החוויה שלך עם {employeeName} (לוקח 10 שניות):\n\n{reviewLink}\n\nכל דירוג עוזר לנו להשתפר ❤️',
+  slotAvailable:
+    'שלום {customerName} 🎉\nהתפנה תור ב-{businessName}!\n\n📅 {dateTime}\n💈 {serviceName} עם {employeeName}\n\nלהזמנה מהירה: {bookingLink}\nרוצה? השב להודעה זו ונסגור עכשיו.',
 };
 
 function applyVars(template: string, ctx: TmplCtx): string {
@@ -91,7 +109,9 @@ function applyVars(template: string, ctx: TmplCtx): string {
     .replace(/\{employeeName\}/g, ctx.employeeName)
     .replace(/\{businessName\}/g, ctx.businessName)
     .replace(/\{dateTime\}/g, dateTime)
-    .replace(/\{notes\}/g, ctx.notes || '');
+    .replace(/\{notes\}/g, ctx.notes || '')
+    .replace(/\{reviewLink\}/g, ctx.reviewLink || '')
+    .replace(/\{bookingLink\}/g, ctx.bookingLink || '');
 }
 
 interface EmployeeTemplateConfig {
@@ -128,4 +148,6 @@ export const templates: Record<TemplateKey, (ctx: TmplCtx) => string> = {
   cancel: (c) => applyVars(defaultTemplates.cancel, c),
   change: (c) => applyVars(defaultTemplates.change, c),
   newBookingToBarber: (c) => applyVars(defaultTemplates.newBookingToBarber, c),
+  reviewRequest: (c) => applyVars(defaultTemplates.reviewRequest, c),
+  slotAvailable: (c) => applyVars(defaultTemplates.slotAvailable, c),
 };

@@ -101,9 +101,11 @@ router.patch('/:id', requireAuth, validate(updateSchema), async (req, res) => {
   if (req.body.status === 'CANCELLED') suggestedKind = 'cancel';
   else if (req.body.startAt || req.body.employeeId) suggestedKind = 'change';
   else if (req.body.status === 'CONFIRMED' && before.status !== 'CONFIRMED') suggestedKind = 'confirm';
+  else if (req.body.status === 'COMPLETED' && before.status !== 'COMPLETED') suggestedKind = 'reviewRequest';
 
   let whatsapp: { url: string; message: string; kind: TemplateKey } | null = null;
   if (suggestedKind && (req.user!.role === 'ADMIN' || req.user!.role === 'BARBER')) {
+    const reviewLink = `${env.PUBLIC_URL || 'https://barbar2026.vercel.app'}/reviews?code=${after.confirmationCode}`;
     const { enabled, message } = await renderTemplate(after.employeeId, suggestedKind, {
       customerName: after.customer.fullName,
       customerPhone: after.customer.phone,
@@ -112,6 +114,7 @@ router.patch('/:id', requireAuth, validate(updateSchema), async (req, res) => {
       startAt: after.startAt,
       businessName: env.BUSINESS_NAME,
       notes: after.notes,
+      reviewLink,
     });
     if (enabled) {
       whatsapp = {
@@ -159,7 +162,56 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     }
   }
 
-  res.json({ ...cancelled, whatsapp });
+  // Find matching waitlist entries — alert them about the now-open slot
+  type WaitlistMatch = { id: string; customerName: string; customerPhone: string; whatsappUrl: string; message: string };
+  const waitlistMatches: WaitlistMatch[] = [];
+  try {
+    const apptDate = new Date(beforeAppt.startAt);
+    const dayStart = new Date(apptDate); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(apptDate); dayEnd.setHours(23, 59, 59, 999);
+    const candidates = await prisma.waitlistEntry.findMany({
+      where: {
+        status: 'WAITING',
+        OR: [
+          { employeeId: beforeAppt.employeeId, serviceId: beforeAppt.serviceId },
+          { employeeId: beforeAppt.employeeId, serviceId: null },
+          { employeeId: null, serviceId: beforeAppt.serviceId },
+        ],
+        AND: [
+          {
+            OR: [
+              { preferredDate: null },
+              { preferredDate: { gte: dayStart, lte: dayEnd } },
+            ],
+          },
+        ],
+      },
+      take: 5,
+      orderBy: { createdAt: 'asc' },
+    });
+    const bookingLink = `${env.PUBLIC_URL || 'https://barbar2026.vercel.app'}/book`;
+    for (const c of candidates) {
+      const { enabled, message } = await renderTemplate(beforeAppt.employeeId, 'slotAvailable', {
+        customerName: c.customerName,
+        customerPhone: c.customerPhone,
+        serviceName: beforeAppt.service.name,
+        employeeName: beforeAppt.employee.user.fullName,
+        startAt: beforeAppt.startAt,
+        businessName: env.BUSINESS_NAME,
+        bookingLink,
+      });
+      if (!enabled) continue;
+      waitlistMatches.push({
+        id: c.id,
+        customerName: c.customerName,
+        customerPhone: c.customerPhone,
+        whatsappUrl: buildWhatsAppUrl(c.customerPhone, message),
+        message,
+      });
+    }
+  } catch { /* non-fatal */ }
+
+  res.json({ ...cancelled, whatsapp, waitlistMatches });
 });
 
 // Check-in: mark customer as arrived (toggle)

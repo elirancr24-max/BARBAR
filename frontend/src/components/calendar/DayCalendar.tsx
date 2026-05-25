@@ -107,11 +107,21 @@ export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/appointments/${id}`)).data,
-    onSuccess: (data) => {
+    onSuccess: (data: { whatsapp?: { url: string } | null; waitlistMatches?: Array<{ id: string; customerName: string; whatsappUrl: string }> }) => {
       toast.success('התור בוטל');
       setSelected(null);
       qc.invalidateQueries({ queryKey: ['appointments'] });
       if (data?.whatsapp?.url) window.open(data.whatsapp.url, '_blank');
+      if (data?.waitlistMatches && data.waitlistMatches.length > 0) {
+        const match = data.waitlistMatches[0];
+        toast(`🔔 ${data.waitlistMatches.length} לקוחות ברשימת המתנה`, {
+          duration: 12000,
+          action: {
+            label: `שלח ל-${match.customerName}`,
+            onClick: () => window.open(match.whatsappUrl, '_blank'),
+          },
+        });
+      }
     },
   });
 

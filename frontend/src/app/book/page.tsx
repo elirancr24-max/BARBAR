@@ -307,9 +307,31 @@ export default function BookPage() {
               {slotsLoading ? (
                 <div className="text-center py-12 text-muted-foreground">טוען זמינות...</div>
               ) : slots.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <CalendarIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">אין זמינות בתאריך זה. נסה תאריך אחר.</p>
+                <Card className="p-8 text-center border-amber-500/30 bg-amber-500/5">
+                  <CalendarIcon className="w-12 h-12 mx-auto text-amber-500 mb-3" />
+                  <h3 className="font-bold text-lg mb-1">אין תורים פנויים בתאריך זה</h3>
+                  <p className="text-sm text-muted-foreground mb-5">בחר תאריך אחר, או הצטרף לרשימת המתנה — נעדכן אותך כשמישהו מבטל.</p>
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    onClick={() => {
+                      const phone = window.prompt('הכנס את מספר הטלפון שלך לרשימת המתנה:');
+                      const name = phone ? window.prompt('שמך המלא:') : null;
+                      if (phone && name) {
+                        api.post('/waitlist', {
+                          customerName: name,
+                          customerPhone: phone,
+                          employeeId,
+                          serviceId,
+                          preferredDate: date ? new Date(date).toISOString() : undefined,
+                        }).then(() => {
+                          toast.success('✨ נרשמת לרשימת המתנה! נעדכן אותך בוואטסאפ כשמתפנה תור.');
+                        }).catch(() => toast.error('שגיאה ברישום'));
+                      }
+                    }}
+                  >
+                    🔔 הצטרף לרשימת המתנה
+                  </Button>
                 </Card>
               ) : (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
