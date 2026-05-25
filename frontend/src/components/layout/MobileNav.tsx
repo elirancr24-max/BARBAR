@@ -24,7 +24,21 @@ export function MobileNav({ role, title }: Props) {
   const router = useRouter();
   const clear = useAuth((s) => s.clear);
   const user = useAuth((s) => s.user);
-  const nav: NavItem[] = role === 'ADMIN' ? adminNav : role === 'BARBER' ? barberNav : customerNav;
+  let nav: NavItem[];
+  if (role === 'ADMIN') {
+    nav = user?.employee
+      ? [
+          ...adminNav,
+          { href: '/barber/calendar', label: 'היומן שלי', icon: barberNav[0].icon },
+          { href: '/barber/availability', label: 'שעות זמינות', icon: barberNav[1].icon },
+          { href: '/barber/messages', label: 'הודעות מוכנות', icon: barberNav[barberNav.length - 1].icon },
+        ]
+      : adminNav;
+  } else if (role === 'BARBER') {
+    nav = barberNav;
+  } else {
+    nav = customerNav;
+  }
 
   async function logout() {
     try { await api.post('/auth/logout'); } catch {}

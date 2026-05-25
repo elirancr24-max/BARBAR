@@ -29,9 +29,9 @@ const templatesSchema = z.object({
 
 async function resolveEmployeeForUser(userId: string, role: string, paramId: string) {
   if (paramId === 'me') {
-    if (role !== 'BARBER') throw Forbidden();
+    // ADMIN owner who is also a barber, or a regular BARBER
     const emp = await prisma.employee.findUnique({ where: { userId } });
-    if (!emp) throw NotFound('פרופיל עובד לא נמצא');
+    if (!emp) throw NotFound('פרופיל עובד לא נמצא — המשתמש אינו ספר');
     return emp;
   }
   const emp = await prisma.employee.findUnique({ where: { id: paramId } });

@@ -7,7 +7,7 @@ import { MobileNav } from '@/components/layout/MobileNav';
 import { Scissors } from 'lucide-react';
 
 export default function BarberLayout({ children }: { children: React.ReactNode }) {
-  const user = useAuthGuard(['BARBER']);
+  const user = useAuthGuard(['BARBER', 'ADMIN']);
   useRealtimeAppointments();
 
   if (!user) {
