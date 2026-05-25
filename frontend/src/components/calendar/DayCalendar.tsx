@@ -40,7 +40,7 @@ const statusStyles: Record<string, { bg: string; ring: string; label: string; te
 
 const HOUR_START = 8;
 const HOUR_END = 21;
-const HOUR_HEIGHT = 80; // px per hour
+const HOUR_HEIGHT = 70; // px per hour (slightly smaller for mobile)
 
 interface Props {
   editable?: boolean;
@@ -60,7 +60,10 @@ function formatDayHeader(d: Date): string {
 export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
   const qc = useQueryClient();
   const [date, setDate] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
-  const [view, setView] = useState<ViewMode>('timeline');
+  // Default to list view on mobile (better UX on narrow screens)
+  const initialView: ViewMode = typeof window !== 'undefined' && window.innerWidth < 1024 ? 'list' : 'timeline';
+  const [view, setView] = useState<ViewMode>(initialView);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Appointment | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -159,66 +162,86 @@ export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* TOOLBAR */}
-      <Card className="p-4 lg:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Date nav */}
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => shiftDay(-1)} aria-label="יום קודם">
-              <ChevronRight className="w-5 h-5" />
-            </Button>
-            <div className="text-center min-w-[200px]">
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                {isToday ? 'היום' : ''}
-              </div>
-              <div className="font-display font-bold text-lg lg:text-xl leading-tight">
-                {formatDayHeader(date)}
-              </div>
+      {/* TOOLBAR — mobile: stacked, desktop: row */}
+      <Card className="p-3 lg:p-5">
+        {/* Row 1 — date nav (always centered, big on mobile) */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <Button variant="outline" size="icon" onClick={() => shiftDay(-1)} aria-label="יום קודם" className="shrink-0 h-11 w-11">
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+          <div className="text-center flex-1 min-w-0">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              {isToday ? 'היום' : ''}
             </div>
-            <Button variant="outline" size="icon" onClick={() => shiftDay(1)} aria-label="יום הבא">
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
+            <div className="font-display font-bold text-base sm:text-lg lg:text-xl leading-tight truncate">
+              {formatDayHeader(date)}
+            </div>
           </div>
+          <Button variant="outline" size="icon" onClick={() => shiftDay(1)} aria-label="יום הבא" className="shrink-0 h-11 w-11">
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant={isToday ? 'gold' : 'outline'} size="sm" onClick={setToday}>
-              <CalendarDays className="w-4 h-4 ms-1" />
-              היום
-            </Button>
-            <div className="w-44">
-              <DatePicker
-                value={date.toISOString().slice(0, 10)}
-                onChange={(iso) => setDate(new Date(iso))}
-              />
-            </div>
-            <div className="flex border rounded-md overflow-hidden">
-              <button
-                onClick={() => setView('timeline')}
-                aria-label="תצוגת ציר זמן"
-                className={cn('px-3 py-2 text-sm flex items-center gap-1', view === 'timeline' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
-              >
-                <LayoutGrid className="w-4 h-4" />
-                <span className="hidden sm:inline">ציר זמן</span>
-              </button>
-              <button
-                onClick={() => setView('list')}
-                aria-label="תצוגת רשימה"
-                className={cn('px-3 py-2 text-sm flex items-center gap-1', view === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
-              >
-                <List className="w-4 h-4" />
-                <span className="hidden sm:inline">רשימה</span>
-              </button>
-            </div>
+        {/* Row 2 — actions */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant={isToday ? 'gold' : 'outline'} size="sm" onClick={setToday} className="h-10">
+            <CalendarDays className="w-4 h-4 ms-1" />
+            היום
+          </Button>
+          <div className="flex-1 min-w-[140px] max-w-[200px]">
+            <DatePicker
+              value={date.toISOString().slice(0, 10)}
+              onChange={(iso) => setDate(new Date(iso))}
+            />
+          </div>
+          <div className="flex border rounded-md overflow-hidden h-10">
+            <button
+              onClick={() => setView('timeline')}
+              aria-label="תצוגת ציר זמן"
+              className={cn('px-3 text-sm flex items-center gap-1 transition-colors', view === 'timeline' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">ציר זמן</span>
+            </button>
+            <button
+              onClick={() => setView('list')}
+              aria-label="תצוגת רשימה"
+              className={cn('px-3 text-sm flex items-center gap-1 transition-colors', view === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">רשימה</span>
+            </button>
           </div>
         </div>
 
-        {/* Stats strip */}
-        <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t text-sm">
+        {/* Status filter chips — horizontally scrollable on mobile */}
+        <div className="flex gap-1.5 mt-3 pt-3 border-t overflow-x-auto -mx-3 px-3 lg:mx-0 lg:px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <FilterChip active={!statusFilter} onClick={() => setStatusFilter(null)}>
+            הכל ({appts.length})
+          </FilterChip>
+          {['PENDING', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'].map((s) => {
+            const count = appts.filter(a => a.status === s).length;
+            return (
+              <FilterChip key={s} active={statusFilter === s} onClick={() => setStatusFilter(statusFilter === s ? null : s)}>
+                {statusStyles[s].label} ({count})
+              </FilterChip>
+            );
+          })}
+        </div>
+
+        {/* Stats strip — desktop only */}
+        <div className="hidden sm:flex flex-wrap gap-4 mt-3 pt-3 border-t text-sm">
           <Stat label="סה״כ תורים" value={appts.length} />
           <Stat label="אושרו" value={appts.filter(a => a.status === 'CONFIRMED').length} />
           <Stat label="ממתינים" value={appts.filter(a => a.status === 'PENDING').length} />
           <Stat label="הושלמו" value={appts.filter(a => a.status === 'COMPLETED').length} />
           <Stat label="הכנסה צפויה" value={formatAgorot(appts.filter(a => a.status !== 'CANCELLED').reduce((s, a) => s + a.priceAgorot, 0))} />
+        </div>
+
+        {/* Mobile revenue strip */}
+        <div className="sm:hidden mt-3 pt-3 border-t text-sm flex justify-between items-center">
+          <span className="text-muted-foreground">הכנסה צפויה</span>
+          <span className="font-bold text-primary text-base tabular-nums">{formatAgorot(appts.filter(a => a.status !== 'CANCELLED').reduce((s, a) => s + a.priceAgorot, 0))}</span>
         </div>
       </Card>
 
@@ -226,9 +249,9 @@ export function DayCalendar({ editable = true, employeeIdFilter }: Props) {
       {isLoading ? (
         <Skeleton className="h-[600px] w-full rounded-xl" />
       ) : view === 'timeline' ? (
-        <TimelineView appts={appts} hourStart={HOUR_START} hourEnd={HOUR_END} hourHeight={HOUR_HEIGHT} nowOffset={nowOffset} nowRef={nowRef} onClick={setSelected} />
+        <TimelineView appts={statusFilter ? appts.filter(a => a.status === statusFilter) : appts} hourStart={HOUR_START} hourEnd={HOUR_END} hourHeight={HOUR_HEIGHT} nowOffset={nowOffset} nowRef={nowRef} onClick={setSelected} />
       ) : (
-        <ListView appts={appts} onClick={setSelected} />
+        <ListView appts={statusFilter ? appts.filter(a => a.status === statusFilter) : appts} onClick={setSelected} />
       )}
 
       {/* FAB — Add new appointment */}
@@ -405,6 +428,22 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   );
 }
 
+function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'shrink-0 px-3 h-8 rounded-full text-xs font-medium border-2 transition-all whitespace-nowrap',
+        active
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-background border-input text-muted-foreground hover:border-primary/60',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 function DetailRow({ icon: Icon, label, value, link, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; link?: string; accent?: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -552,23 +591,30 @@ function ListView({ appts, onClick }: { appts: Appointment[]; onClick: (a: Appoi
             onClick={() => onClick(a)}
             className="w-full text-start"
           >
-            <Card className={cn('hover:shadow-md transition-all border-2', s.ring, s.bg)}>
-              <div className="p-4 flex items-center gap-4">
-                <div className="text-center min-w-[80px]">
-                  <div className="font-display font-bold text-2xl text-primary tabular-nums leading-none">{formatTime(a.startAt)}</div>
-                  <div className="text-xs text-muted-foreground mt-1 tabular-nums">{formatTime(a.endAt)}</div>
+            <Card className={cn('hover:shadow-md active:scale-[0.99] transition-all border-2', s.ring, s.bg)}>
+              <div className="p-3 sm:p-4 flex items-stretch gap-3 sm:gap-4">
+                <div className="text-center min-w-[60px] sm:min-w-[80px] flex flex-col justify-center">
+                  <div className="flex items-center justify-center gap-1">
+                    {a.checkedInAt && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="הגיע" />}
+                    <span className="font-display font-bold text-xl sm:text-2xl text-primary tabular-nums leading-none">{formatTime(a.startAt)}</span>
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 tabular-nums">עד {formatTime(a.endAt)}</div>
                 </div>
-                <div className="w-1 self-stretch rounded-full" style={{ background: a.employee.color }} />
+                <div className="w-1 self-stretch rounded-full shrink-0" style={{ background: a.employee.color }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="font-semibold truncate">{a.customer.fullName}</div>
+                    <div className="font-semibold truncate text-base">{a.customer.fullName}</div>
                     <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium border shrink-0', s.ring, s.text)}>{s.label}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground truncate flex items-center gap-1.5 flex-wrap">
-                    <Scissors className="w-3.5 h-3.5 shrink-0" />
+                  <div className="text-xs sm:text-sm text-muted-foreground truncate flex items-center gap-1.5 flex-wrap">
+                    <Scissors className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                     <span className="truncate">{a.service.name}</span>
                     <span className="opacity-50">·</span>
                     <span style={{ color: a.employee.color }} className="font-medium">{a.employee.user.fullName}</span>
+                  </div>
+                  <div className="sm:hidden flex items-center justify-between mt-1.5 text-xs">
+                    <span className="text-muted-foreground tabular-nums">{a.service.durationMin} דק'</span>
+                    <span className="font-bold text-primary font-display tabular-nums">{formatAgorot(a.priceAgorot)}</span>
                   </div>
                 </div>
                 <div className="hidden sm:block text-end">
