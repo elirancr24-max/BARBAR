@@ -1,0 +1,203 @@
+// BarBar — Prisma Schema (SQLite for local dev without Docker)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Role values: "ADMIN" | "BARBER" | "CUSTOMER"
+// AppointmentStatus values: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW"
+// PaymentStatus values: "PENDING" | "PAID" | "REFUNDED" | "FAILED"
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  phone        String    @unique
+  passwordHash String
+  fullName     String
+  role         String    @default("CUSTOMER")
+  active       Boolean   @default(true)
+  birthday     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee      Employee?
+  customer      Customer?
+  appointments  Appointment[]  @relation("CustomerAppointments")
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  deviceInfo String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Employee {
+  id     String  @id @default(cuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio    String?
+  color  String  @default("#c9a961")
+  active Boolean @default(true)
+
+  workingHours WorkingHour[]
+  timeOff      TimeOff[]
+  appointments Appointment[]
+  services     ServicesOnEmployees[]
+}
+
+model WorkingHour {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  breakStart String?
+  breakEnd   String?
+
+  @@unique([employeeId, dayOfWeek])
+}
+
+model TimeOff {
+  id         String    @id @default(cuid())
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  endDate    DateTime
+  reason     String?
+  isGlobal   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([employeeId])
+  @@index([startDate, endDate])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes       String?
+  vip         Boolean  @default(false)
+  tags        String   @default("")  // CSV: "regular,beard,sensitive"
+  totalVisits Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  durationMin Int
+  priceAgorot Int
+  color       String   @default("#0ea5e9")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employees    ServicesOnEmployees[]
+  appointments Appointment[]
+}
+
+model ServicesOnEmployees {
+  serviceId  String
+  employeeId String
+  service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, employeeId])
+}
+
+model Appointment {
+  id           String    @id @default(cuid())
+  customerId   String
+  customer     User      @relation("CustomerAppointments", fields: [customerId], references: [id])
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  serviceId    String
+  service      Service   @relation(fields: [serviceId], references: [id])
+  startAt      DateTime
+  endAt        DateTime
+  status       String    @default("PENDING")
+  notes        String?
+  priceAgorot  Int
+  checkedInAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  payment Payment?
+
+  @@index([employeeId, startAt])
+  @@index([customerId, startAt])
+  @@index([status])
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  appointmentId String    @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  amountAgorot  Int
+  tipAgorot     Int       @default(0)
+  method        String?   // "cash" | "card" | "bit" | "transfer" | "other"
+  status        String    @default("PENDING")
+  provider      String
+  providerRef   String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model NotificationLog {
+  id            String   @id @default(cuid())
+  appointmentId String?
+  channel       String
+  recipient     String
+  message       String
+  status        String
+  meta          String?  // JSON string
+  createdAt     DateTime @default(now())
+
+  @@index([appointmentId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorRole  String?
+  action     String
+  entityType String
+  entityId   String?
+  before     String?  // JSON string
+  after      String?  // JSON string
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+}
+
+model FeatureFlag {
+  key         String   @id
+  enabled     Boolean  @default(false)
+  description String?
+  rolloutPct  Int      @default(0)
+  rolesAllow  String   @default("")  // CSV: "ADMIN,BARBER"
+  updatedAt   DateTime @updatedAt
+}

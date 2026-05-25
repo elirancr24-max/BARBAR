@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 41 47% 58%;            /* Gold #c9a961 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 41 47% 58%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 4%;
+    --foreground: 0 0% 98%;
+    --card: 222 47% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 222 47% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 41 47% 58%;
+    --primary-foreground: 222 47% 4%;
+    --secondary: 217 33% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 12%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 41 47% 58%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    direction: rtl;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Better focus visibility */
+  :focus-visible {
+    outline: none;
+  }
+
+  /* Reduce motion when requested */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-muted-foreground/30 rounded; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/50; }
+
+  /* iOS-safe utilities */
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .ps-safe { padding-inline-start: env(safe-area-inset-left); }
+  .pe-safe { padding-inline-end: env(safe-area-inset-right); }
+  .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+  /* Inputs: 16px to disable iOS zoom on focus */
+  input:not([type='checkbox']):not([type='radio']),
+  select, textarea { font-size: 16px; }
+  body { overscroll-behavior-y: none; }
+  a, button { -webkit-tap-highlight-color: transparent; }
+}
+
+@layer components {
+  .glass {
+    @apply bg-card/60 backdrop-blur-xl border border-white/10;
+  }
+  .gold-gradient {
+    background: linear-gradient(135deg, #c9a961 0%, #a8893f 100%);
+  }
+  .font-display {
+    font-family: 'Frank Ruhl Libre', 'Playfair Display', 'Heebo', serif;
+    letter-spacing: -0.01em;
+  }
+  /* Barber pole accent (subtle, sophisticated) */
+  .barber-accent {
+    background-image: linear-gradient(45deg,
+      #c9a961 0%, #c9a961 25%,
+      transparent 25%, transparent 50%,
+      #c9a961 50%, #c9a961 75%,
+      transparent 75%);
+    background-size: 12px 12px;
+  }
+  /* Page enter animation */
+  .page-enter {
+    animation: page-in 220ms ease-out;
+  }
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  /* Subtle premium texture */
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='3'/></filter><rect width='100' height='100' filter='url(%23n)'/></svg>");
+  }
+}
+
+/* ===== FullCalendar — BarBar custom theme ===== */
+.barbar-calendar .fc {
+  direction: rtl;
+  font-family: 'Heebo', sans-serif;
+  --fc-border-color: hsl(var(--border));
+  --fc-page-bg-color: transparent;
+  --fc-today-bg-color: hsl(var(--primary) / 0.06);
+  --fc-now-indicator-color: hsl(var(--primary));
+  --fc-event-border-color: transparent;
+  --fc-neutral-bg-color: hsl(var(--secondary));
+}
+.barbar-calendar .fc-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.barbar-calendar .fc-button {
+  background: hsl(var(--secondary)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: none !important;
+  text-transform: none;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.875rem;
+  border-radius: 0.5rem !important;
+}
+.barbar-calendar .fc-button:hover {
+  background: hsl(var(--accent)) !important;
+}
+.barbar-calendar .fc-button-primary:not(:disabled).fc-button-active,
+.barbar-calendar .fc-button-primary:not(:disabled):active {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+.barbar-calendar .fc-button-group .fc-button {
+  border-radius: 0 !important;
+}
+.barbar-calendar .fc-button-group .fc-button:first-child { border-start-start-radius: 0.5rem !important; border-end-start-radius: 0.5rem !important; }
+.barbar-calendar .fc-button-group .fc-button:last-child { border-start-end-radius: 0.5rem !important; border-end-end-radius: 0.5rem !important; }
+
+.barbar-calendar .fc-col-header-cell {
+  background: hsl(var(--secondary) / 0.6);
+  padding: 0.75rem 0;
+  font-weight: 600;
+}
+.barbar-calendar .fc-timegrid-slot {
+  height: 2.5rem;
+  border-color: hsl(var(--border) / 0.5);
+}
+.barbar-calendar .fc-timegrid-slot-label {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+.barbar-calendar .fc-event {
+  border-radius: 8px !important;
+  border-inline-start-width: 4px !important;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  overflow: hidden;
+}
+.barbar-calendar .fc-event:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px -6px rgb(0 0 0 / 0.25);
+  z-index: 10;
+}
+.barbar-calendar .fc-timegrid-event {
+  box-shadow: 0 2px 6px -1px rgb(0 0 0 / 0.15);
+}
+.barbar-calendar .fc-timegrid-now-indicator-line {
+  border-color: hsl(var(--primary)) !important;
+  border-width: 2px !important;
+}
+.barbar-calendar .fc-timegrid-now-indicator-arrow {
+  border-color: hsl(var(--primary)) !important;
+}
+.dark .barbar-calendar .fc-col-header-cell-cushion,
+.dark .barbar-calendar .fc-daygrid-day-number {
+  color: hsl(var(--foreground));
+}
+.barbar-calendar a.fc-col-header-cell-cushion,
+.barbar-calendar a.fc-daygrid-day-number {
+  text-decoration: none !important;
+  color: inherit;
+}

@@ -1,0 +1,53 @@
+# Render Blueprint — One-click deploy for backend
+# Usage: Push to GitHub, then in Render → New → Blueprint → connect repo
+#
+# After deploy:
+#   1. Fill in DATABASE_URL (Supabase) and REDIS_URL (Upstash) in Render env vars
+#   2. Update CORS_ORIGIN to your Vercel URL
+#   3. Run seed once: Render shell → `npx tsx prisma/seed.ts`
+
+services:
+  - type: web
+    name: barabargil-api
+    runtime: node
+    rootDir: backend
+    plan: free  # change to "starter" ($7/mo) for production (no cold start)
+    region: frankfurt
+    branch: main
+    healthCheckPath: /health
+    buildCommand: npm install && npm run build:prod
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: API_PREFIX
+        value: /api/v1
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: LOG_LEVEL
+        value: info
+      - key: PAYMENT_PROVIDER
+        value: mock
+      - key: BUSINESS_NAME
+        value: בר אברג׳יל Hair Design
+      - key: BUSINESS_PHONE
+        value: "972500000001"
+      - key: BUSINESS_TIMEZONE
+        value: Asia/Jerusalem
+      - key: BUSINESS_ADDRESS
+        value: בניין העיגולים, אילת
+      # ─── Fill these AFTER provisioning Supabase + Upstash ───
+      - key: DATABASE_URL
+        sync: false   # must be set manually in Render dashboard
+      - key: REDIS_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false   # set to your Vercel URL, e.g. https://barabargil.vercel.app

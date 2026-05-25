@@ -1,0 +1,34 @@
+{
+  "name": "barbar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BarBar — מערכת ניהול תורים מקצועית למספרה",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "setup": "npm install && npm run docker:up && npm run db:migrate && npm run db:seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "db:migrate": "npm --workspace backend run prisma:migrate",
+    "db:reset": "npm --workspace backend run prisma:reset",
+    "db:seed": "npm --workspace backend run prisma:seed",
+    "db:studio": "npm --workspace backend run prisma:studio",
+    "dev": "concurrently -n api,web -c blue,green \"npm --workspace backend run dev\" \"npm --workspace frontend run dev\"",
+    "dev:api": "npm --workspace backend run dev",
+    "dev:web": "npm --workspace frontend run dev",
+    "build": "npm --workspace backend run build && npm --workspace frontend run build",
+    "start": "concurrently -n api,web -c blue,green \"npm --workspace backend run start\" \"npm --workspace frontend run start\"",
+    "lint": "npm --workspace backend run lint && npm --workspace frontend run lint",
+    "test": "npm --workspace backend run test && npm --workspace frontend run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "בר אברג׳יל · Hair Design",
+  "short_name": "בר אברג׳יל",
+  "description": "קביעת תור אונליין למספרת בר אברג׳יל באילת",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#c9a961",
+  "lang": "he",
+  "dir": "rtl",
+  "categories": ["lifestyle", "beauty"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.jpg",
+      "sizes": "100x100",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "קבע תור",
+      "short_name": "תור חדש",
+      "description": "הזמנת תור חדש",
+      "url": "/book",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "התורים שלי",
+      "short_name": "התורים שלי",
+      "url": "/my/appointments"
+    }
+  ]
+}

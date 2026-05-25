@@ -1,0 +1,43 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# build
+dist/
+build/
+.next/
+out/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# tests / coverage
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+backend/*.db
+backend/*.db-journal
+backend/_check.mjs
+
+# misc
+*.tsbuildinfo
+.eslintcache
