@@ -23,7 +23,16 @@ let io: IOServer | null = null;
 export function initSocket(server: HTTPServer): IOServer {
   io = new IOServer(server, {
     cors: {
-      origin: env.CORS_ORIGIN.split(',').map((s) => s.trim()),
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        const allowed = env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+        if (allowed.includes('*') || allowed.includes(origin)) return cb(null, true);
+        try {
+          const host = new URL(origin).hostname;
+          if (host.endsWith('.vercel.app')) return cb(null, true);
+        } catch { /* ignore */ }
+        cb(new Error(`Socket CORS blocked: ${origin}`));
+      },
       credentials: true,
     },
     transports: ['websocket', 'polling'],

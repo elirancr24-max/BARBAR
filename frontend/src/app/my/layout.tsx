@@ -7,7 +7,8 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, clearTokens } from '@/lib/api';
+import { disconnectSocket } from '@/lib/socket';
 import { Scissors } from 'lucide-react';
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   async function logout() {
     try { await api.post('/auth/logout'); } catch {}
+    clearTokens();
+    disconnectSocket();
     clear();
     router.push('/');
   }

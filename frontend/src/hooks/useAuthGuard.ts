@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, clearTokens } from '@/lib/api';
 import { useAuth, type Role } from '@/store/auth';
 
 export function useAuthGuard(allowedRoles?: Role[]) {
@@ -21,6 +21,7 @@ export function useAuthGuard(allowedRoles?: Role[]) {
         }
       } catch {
         if (cancelled) return;
+        clearTokens();
         clear();
         router.push('/login');
       }

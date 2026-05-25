@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { getAccessToken } from './api';
 
 const URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
 
@@ -10,6 +11,10 @@ export function getSocket(): Socket {
       withCredentials: true,
       autoConnect: true,
       transports: ['websocket', 'polling'],
+      auth: (cb) => {
+        // Re-read token at connect-time (refresh-safe)
+        cb({ token: getAccessToken() || '' });
+      },
     });
   }
   return socket;

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LogOut } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, clearTokens } from '@/lib/api';
+import { disconnectSocket } from '@/lib/socket';
 import { useAuth } from '@/store/auth';
 import { Button } from '@/components/ui/button';
 import { PhotoMark } from '@/components/brand/PhotoMark';
@@ -19,6 +20,8 @@ export function Sidebar({ role }: { role: 'ADMIN' | 'BARBER' | 'CUSTOMER' }) {
 
   async function logout() {
     try { await api.post('/auth/logout'); } catch {}
+    clearTokens();
+    disconnectSocket();
     clear();
     router.push('/login');
   }

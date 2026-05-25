@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { api } from '@/lib/api';
+import { api, setTokens } from '@/lib/api';
 import { useAuth } from '@/store/auth';
 
 export default function LoginPage() {
@@ -24,6 +24,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
+      if (data.accessToken && data.refreshToken) setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
       toast.success('ברוך הבא!');
       const role = data.user.role;

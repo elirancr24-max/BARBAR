@@ -36,7 +36,21 @@ export function createApp(): Application {
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(
     cors({
-      origin: env.CORS_ORIGIN.split(',').map((s) => s.trim()),
+      origin: (origin, cb) => {
+        // Allow non-browser requests (no origin) like Postman/curl
+        if (!origin) return cb(null, true);
+        const allowed = env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+        // Wildcard
+        if (allowed.includes('*')) return cb(null, true);
+        // Exact match
+        if (allowed.includes(origin)) return cb(null, true);
+        // Allow all *.vercel.app subdomains (preview deploys + project URLs)
+        try {
+          const host = new URL(origin).hostname;
+          if (host.endsWith('.vercel.app')) return cb(null, true);
+        } catch { /* ignore */ }
+        cb(new Error(`CORS blocked: ${origin}`));
+      },
       credentials: true,
     }),
   );

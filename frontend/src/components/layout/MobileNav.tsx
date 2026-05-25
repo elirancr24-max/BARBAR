@@ -9,7 +9,8 @@ import { ThemeToggle } from './ThemeToggle';
 import { PhotoMark } from '@/components/brand/PhotoMark';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
-import { api } from '@/lib/api';
+import { api, clearTokens } from '@/lib/api';
+import { disconnectSocket } from '@/lib/socket';
 import { adminNav, barberNav, customerNav, type NavItem } from './navItems';
 
 interface Props {
@@ -27,6 +28,8 @@ export function MobileNav({ role, title }: Props) {
 
   async function logout() {
     try { await api.post('/auth/logout'); } catch {}
+    clearTokens();
+    disconnectSocket();
     clear();
     router.push('/login');
   }
