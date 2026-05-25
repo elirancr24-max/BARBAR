@@ -96,15 +96,18 @@ export default function MyBookingsPage() {
             ))}
           </div>
         ) : codes.length === 0 ? (
-          <EmptyState
-            icon={Calendar}
-            title="אין לך תורים שמורים"
-            description="ההזמנות שתבצע במכשיר זה יופיעו כאן אוטומטית"
-          >
-            <Button asChild variant="gold" size="lg" className="mt-4">
-              <Link href="/book"><Plus className="w-4 h-4 ms-2" /> קבע תור עכשיו</Link>
-            </Button>
-          </EmptyState>
+          <div>
+            <EmptyState
+              icon={Calendar}
+              title="אין לך תורים שמורים"
+              description="ההזמנות שתבצע במכשיר זה יופיעו כאן אוטומטית"
+            />
+            <div className="text-center mt-4">
+              <Button asChild variant="gold" size="lg">
+                <Link href="/book"><Plus className="w-4 h-4 ms-2" /> קבע תור עכשיו</Link>
+              </Button>
+            </div>
+          </div>
         ) : (
           <>
             {/* Upcoming */}
