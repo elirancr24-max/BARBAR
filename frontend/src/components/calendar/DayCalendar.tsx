@@ -427,7 +427,7 @@ function TimelineView({
   appts: Appointment[];
   hourStart: number; hourEnd: number; hourHeight: number;
   nowOffset: number | null;
-  nowRef: React.RefObject<HTMLDivElement>;
+  nowRef: React.RefObject<HTMLDivElement | null>;
   onClick: (a: Appointment) => void;
 }) {
   const totalHours = hourEnd - hourStart;
