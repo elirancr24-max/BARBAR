@@ -26,7 +26,9 @@ const config: Config = {
         gold: { DEFAULT: '#c9a961', dark: '#a8893f' },
       },
       fontFamily: {
-        sans: ['Heebo', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-rubik)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-rubik)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-rubik)', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap');
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -105,7 +103,8 @@
     background: linear-gradient(135deg, #c9a961 0%, #a8893f 100%);
   }
   .font-display {
-    font-family: 'Frank Ruhl Libre', 'Playfair Display', 'Heebo', serif;
+    font-family: var(--font-rubik), system-ui, sans-serif;
+    font-weight: 900;
     letter-spacing: -0.01em;
   }
   /* Barber pole accent (subtle, sophisticated) */
@@ -140,7 +139,7 @@
 /* ===== FullCalendar — BarBar custom theme ===== */
 .barbar-calendar .fc {
   direction: rtl;
-  font-family: 'Heebo', sans-serif;
+  font-family: var(--font-rubik), system-ui, sans-serif;
   --fc-border-color: hsl(var(--border));
   --fc-page-bg-color: transparent;
   --fc-today-bg-color: hsl(var(--primary) / 0.06);

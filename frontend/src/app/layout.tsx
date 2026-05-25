@@ -1,9 +1,17 @@
 import type { Metadata, Viewport } from 'next';
+import { Rubik } from 'next/font/google';
 import '../styles/globals.css';
 import { Providers } from '@/components/providers';
 import { RegisterSW } from '@/components/pwa/RegisterSW';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { BottomTabBar } from '@/components/layout/BottomTabBar';
+
+const rubik = Rubik({
+  subsets: ['hebrew', 'latin'],
+  variable: '--font-rubik',
+  display: 'swap',
+  weight: ['400', '500', '700', '900'],
+});
 
 export const metadata: Metadata = {
   title: 'בר אברג׳יל · Hair Design — קביעת תור אונליין',
@@ -42,7 +50,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl" suppressHydrationWarning>
+    <html lang="he" dir="rtl" suppressHydrationWarning className={rubik.variable}>
+      <head>
+        {/* Capture beforeinstallprompt early — before React hydrates — so we never miss it */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{window.__deferredInstallPrompt=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__deferredInstallPrompt=e;});}catch(_){}})();`,
+          }}
+        />
+      </head>
       <body>
         <Providers>
           {children}
