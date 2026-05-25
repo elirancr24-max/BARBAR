@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Calendar, Scissors, User } from 'lucide-react';
+import { Home, Calendar, Scissors, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
   { href: '/', label: 'בית', icon: Home, exact: true },
   { href: '/book', label: 'קבע תור', icon: Calendar, primary: true },
-  { href: '/my/appointments', label: 'התורים שלי', icon: Scissors },
-  { href: '/login', label: 'כניסה', icon: User },
+  { href: '/my-bookings', label: 'התורים שלי', icon: Scissors },
+  { href: '/reviews', label: 'ביקורות', icon: Star },
 ];
 
 export function BottomTabBar() {

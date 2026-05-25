@@ -288,10 +288,12 @@ export default function LandingPage() {
           <Link href="/book" className="hover:text-primary transition-colors">קבע תור</Link>
           <span aria-hidden>·</span>
           <Link href="/my-bookings" className="hover:text-primary transition-colors">התורים שלי</Link>
-          <span aria-hidden>·</span>
-          <Link href="/login" className="hover:text-primary transition-colors">כניסת צוות</Link>
         </div>
-        <div>© 2026 בר אברג׳יל · Hair Design</div>
+        <div>
+          © 2026 בר אברג׳יל · Hair Design
+          {/* Staff login: discreet — bookmark or type /login */}
+          <Link href="/login" className="opacity-20 hover:opacity-60 transition-opacity ms-2" aria-label="כניסת צוות">·</Link>
+        </div>
       </footer>
     </div>
   );
