@@ -38,15 +38,16 @@ export default function BarberMessagesPage() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['my-templates'],
     queryFn: async () => (await api.get<{ templates: TemplateItem[] }>('/employees/me/templates')).data,
+    retry: 1,
   });
 
   useEffect(() => {
-    if (data?.templates) {
+    if (data?.templates && data.templates.length > 0 && items.length === 0) {
       setItems(data.templates);
-      if (!activeKey) setActiveKey(data.templates[0]?.key ?? null);
+      setActiveKey((cur) => cur ?? data.templates[0]?.key ?? null);
       setDirty(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,6 +107,17 @@ export default function BarberMessagesPage() {
 
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">טוען...</div>
+          ) : error ? (
+            <Card className="p-6 text-center">
+              <p className="text-destructive font-medium mb-2">שגיאה בטעינת ההודעות</p>
+              <p className="text-sm text-muted-foreground mb-4">{(error as Error).message}</p>
+              <Button variant="outline" onClick={() => refetch()}>נסה שוב</Button>
+            </Card>
+          ) : items.length === 0 ? (
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground mb-3">לא נטענו הודעות. נסה לרענן.</p>
+              <Button variant="outline" onClick={() => refetch()}>טען מחדש</Button>
+            </Card>
           ) : (
             <div className="grid md:grid-cols-[260px_1fr] gap-4">
               {/* Sidebar: list of templates */}
