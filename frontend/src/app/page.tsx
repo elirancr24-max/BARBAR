@@ -149,6 +149,11 @@ export default function LandingPage() {
               קבע תור עכשיו
             </Link>
           </Button>
+          <div className="mt-4">
+            <Link href="/my-bookings" className="text-sm text-muted-foreground hover:text-primary underline-offset-4 hover:underline transition-colors">
+              יש לי כבר תור — הצג את התורים שלי
+            </Link>
+          </div>
         </motion.div>
 
         {/* Info strip */}
@@ -281,6 +286,8 @@ export default function LandingPage() {
           <Link href="/reviews" className="hover:text-primary transition-colors">ביקורות</Link>
           <span aria-hidden>·</span>
           <Link href="/book" className="hover:text-primary transition-colors">קבע תור</Link>
+          <span aria-hidden>·</span>
+          <Link href="/my-bookings" className="hover:text-primary transition-colors">התורים שלי</Link>
           <span aria-hidden>·</span>
           <Link href="/login" className="hover:text-primary transition-colors">כניסת צוות</Link>
         </div>

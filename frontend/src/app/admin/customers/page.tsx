@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Star, Users, Phone, Mail, ChevronLeft } from 'lucide-react';
+import { Search, Star, Users, Phone, Mail, ChevronLeft, Ban } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ import { api } from '@/lib/api';
 interface Customer {
   id: string;
   vip: boolean;
+  blocked?: boolean;
+  blockedReason?: string | null;
   totalVisits: number;
   notes?: string|null;
   user: { id: string; fullName: string; email: string; phone: string; createdAt: string };
@@ -48,15 +51,24 @@ export default function CustomersPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {customers.map((c) => (
               <Link key={c.id} href={`${basePath}/${c.id}`} prefetch>
-                <Card className="hover:shadow-lg hover:border-primary/40 transition-all group cursor-pointer h-full">
+                <Card className={cn(
+                  'hover:shadow-lg hover:border-primary/40 transition-all group cursor-pointer h-full',
+                  c.blocked && 'border-red-500/40 bg-red-500/5 opacity-75',
+                )}>
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-lg group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        {c.user.fullName.charAt(0)}
+                      <div className={cn(
+                        'w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors',
+                        c.blocked
+                          ? 'bg-red-500/20 text-red-600'
+                          : 'bg-primary/20 text-primary group-hover:bg-primary group-hover:text-primary-foreground',
+                      )}>
+                        {c.blocked ? <Ban className="w-5 h-5" /> : c.user.fullName.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold flex items-center gap-1 truncate">
                           {c.user.fullName} {c.vip && <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />}
+                          {c.blocked && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-600 ms-1">חסום</span>}
                         </div>
                         <div className="text-xs text-muted-foreground truncate">{c.totalVisits} ביקורים</div>
                       </div>

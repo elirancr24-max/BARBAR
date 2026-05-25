@@ -27,11 +27,11 @@ interface Appointment {
 }
 
 const statusStyles: Record<string, { bg: string; ring: string; label: string }> = {
-  PENDING:   { bg: '#94a3b8', ring: '#64748b', label: 'ממתין' },
+  PENDING:   { bg: '#f59e0b', ring: '#d97706', label: 'ממתין לאישור' },
   CONFIRMED: { bg: '#10b981', ring: '#059669', label: 'אושר' },
   COMPLETED: { bg: '#3b82f6', ring: '#2563eb', label: 'הושלם' },
   CANCELLED: { bg: '#ef4444', ring: '#dc2626', label: 'בוטל' },
-  NO_SHOW:   { bg: '#f59e0b', ring: '#d97706', label: 'לא הגיע' },
+  NO_SHOW:   { bg: '#ea580c', ring: '#c2410c', label: 'לא הגיע' },
 };
 
 interface Props {
@@ -105,8 +105,32 @@ export function AppointmentCalendar({ editable = true, employeeIdFilter }: Props
     };
   }), [appts]);
 
+  const pendingAppts = appts.filter((a) => a.status === 'PENDING');
+
   return (
     <>
+      {/* Pending approval banner */}
+      {pendingAppts.length > 0 && (
+        <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
+            </span>
+            <span className="font-semibold text-sm">
+              {pendingAppts.length} {pendingAppts.length === 1 ? 'תור ממתין' : 'תורים ממתינים'} לאישור
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => pendingAppts[0] && setSelected(pendingAppts[0])}
+            className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline"
+          >
+            ← פתח את הבא
+          </button>
+        </div>
+      )}
+
       {/* Legend */}
       <div className="flex flex-wrap gap-3 mb-4 text-sm">
         {Object.entries(statusStyles).map(([key, s]) => (

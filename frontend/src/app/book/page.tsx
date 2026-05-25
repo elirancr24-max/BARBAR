@@ -112,7 +112,16 @@ export default function BookPage() {
     },
     onSuccess: (data) => {
       setResult(data);
-      toast.success('🎉 התור נקבע בהצלחה!');
+      toast.success('🎉 הבקשה נשלחה! ממתינה לאישור הספר');
+      // Save confirmation code to localStorage so customer can find it later
+      try {
+        const stored: string[] = JSON.parse(localStorage.getItem('barbar:codes') || '[]');
+        if (data.confirmation && !stored.includes(data.confirmation)) {
+          stored.push(data.confirmation);
+          // keep last 20
+          localStorage.setItem('barbar:codes', JSON.stringify(stored.slice(-20)));
+        }
+      } catch { /* ignore */ }
     },
     onError: (e: unknown) => {
       const err = e as { response?: { data?: { error?: { message?: string } } } };
@@ -142,8 +151,14 @@ export default function BookPage() {
                 className="w-24 h-24 mx-auto mb-6 rounded-full bg-emerald-500/15 flex items-center justify-center">
                 <CheckCircle2 className="w-14 h-14 text-emerald-500" />
               </motion.div>
-              <h1 className="text-3xl font-bold mb-2">התור שלך אושר!</h1>
-              <p className="text-muted-foreground mb-8">נשמח לראותך, נשלח לך תזכורת לפני המועד.</p>
+              <h1 className="text-3xl font-bold mb-2">בקשת התור נשלחה!</h1>
+              <p className="text-muted-foreground mb-2">
+                הבקשה ממתינה לאישור הספר. תקבל אישור בוואטסאפ בקרוב.
+              </p>
+              <div className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 mb-6 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                ממתין לאישור
+              </div>
               <div className="space-y-3 text-start bg-secondary/40 rounded-xl p-5 mb-6">
                 <Row label="קוד אישור" value={result.confirmation} highlight />
                 <Row label="שירות" value={result.service} />
@@ -164,6 +179,9 @@ export default function BookPage() {
                 )}
                 <Button variant="gold" asChild className="w-full h-12">
                   <Link href={`/booking/${result.confirmation}`}>צפה / בטל את התור שלי</Link>
+                </Button>
+                <Button variant="outline" asChild className="w-full h-12">
+                  <Link href="/my-bookings">כל התורים שלי</Link>
                 </Button>
                 <div className="flex gap-3">
                   <Button variant="outline" asChild className="flex-1"><Link href="/">חזרה לדף הבית</Link></Button>

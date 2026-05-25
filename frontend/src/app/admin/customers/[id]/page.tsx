@@ -24,6 +24,8 @@ import { formatAgorot, formatDateHe, formatTime, cn } from '@/lib/utils';
 interface Customer {
   id: string;
   vip: boolean;
+  blocked?: boolean;
+  blockedReason?: string | null;
   notes: string | null;
   tags: string[];
   totalVisits: number;
@@ -168,15 +170,39 @@ export default function CustomerDetailPage({ params }: Props) {
                       <Phone className="w-3.5 h-3.5" /> {customer.user.phone}
                     </a>
                   </div>
-                  <button
-                    onClick={() => updateNotesMut.mutate({ vip: !customer.vip })}
-                    className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                      customer.vip ? 'bg-white/30 hover:bg-white/40' : 'bg-white/10 hover:bg-white/25')}
-                  >
-                    <Star className={cn('w-4 h-4 inline ms-1', customer.vip && 'fill-current')} />
-                    {customer.vip ? 'VIP' : 'הגדר כ-VIP'}
-                  </button>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      onClick={() => updateNotesMut.mutate({ vip: !customer.vip })}
+                      className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                        customer.vip ? 'bg-white/30 hover:bg-white/40' : 'bg-white/10 hover:bg-white/25')}
+                    >
+                      <Star className={cn('w-4 h-4 inline ms-1', customer.vip && 'fill-current')} />
+                      {customer.vip ? 'VIP' : 'הגדר כ-VIP'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (customer.blocked) {
+                          updateNotesMut.mutate({ blocked: false, blockedReason: null });
+                        } else {
+                          const reason = window.prompt('סיבת החסימה (לא חובה — נשמר לעיון פנימי):') ?? null;
+                          if (reason !== null || window.confirm('לחסום לקוח זה? לא יוכל לקבוע תורים נוספים.')) {
+                            updateNotesMut.mutate({ blocked: true, blockedReason: reason || undefined });
+                          }
+                        }
+                      }}
+                      className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                        customer.blocked ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-white/10 hover:bg-white/25')}
+                    >
+                      {customer.blocked ? '🔓 בטל חסימה' : '🚫 חסום לקוח'}
+                    </button>
+                  </div>
                 </div>
+                {customer.blocked && (
+                  <div className="mt-3 p-2.5 rounded-lg bg-red-600/20 text-sm flex items-start gap-2">
+                    <span className="font-bold">לקוח חסום</span>
+                    {customer.blockedReason && <span className="opacity-90">· {customer.blockedReason}</span>}
+                  </div>
+                )}
               </div>
 
               {/* Stats strip */}

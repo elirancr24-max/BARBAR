@@ -6,6 +6,36 @@ import { invalidateAvailability } from '../availability/availability.service';
 
 const router = Router();
 
+// POST /bookings/lookup — batch lookup for "my bookings" page using locally-stored codes
+router.post('/lookup', async (req, res) => {
+  const codes = Array.isArray(req.body?.codes) ? (req.body.codes as string[]).slice(0, 50) : [];
+  if (codes.length === 0) return res.json({ bookings: [] });
+  const list = await prisma.appointment.findMany({
+    where: { confirmationCode: { in: codes } },
+    include: {
+      service: { select: { name: true, color: true } },
+      employee: { include: { user: { select: { fullName: true, phone: true } } } },
+      customer: { select: { fullName: true, phone: true } },
+    },
+    orderBy: { startAt: 'desc' },
+  });
+  res.json({
+    bookings: list.map((a) => ({
+      id: a.id,
+      confirmationCode: a.confirmationCode,
+      customerName: a.customer.fullName,
+      serviceName: a.service.name,
+      serviceColor: a.service.color,
+      employeeName: a.employee.user.fullName,
+      employeePhone: a.employee.user.phone,
+      startAt: a.startAt,
+      endAt: a.endAt,
+      status: a.status,
+      priceAgorot: a.priceAgorot,
+    })),
+  });
+});
+
 // GET /bookings/:code — public lookup by confirmation code
 router.get('/:code', async (req, res, next) => {
   const code = req.params.code;

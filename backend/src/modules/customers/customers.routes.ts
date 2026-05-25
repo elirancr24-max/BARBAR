@@ -59,6 +59,8 @@ router.patch(
   validate(z.object({
     notes: z.string().optional(),
     vip: z.boolean().optional(),
+    blocked: z.boolean().optional(),
+    blockedReason: z.string().optional().nullable(),
     tags: z.union([z.string(), z.array(z.string())]).optional(),
     birthday: z.string().optional().nullable(),
     fullName: z.string().optional(),

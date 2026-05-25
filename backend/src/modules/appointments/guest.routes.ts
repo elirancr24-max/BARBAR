@@ -33,7 +33,12 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
   const email = dto.email || `guest+${phone}@barbar.local`;
 
   // Find or create a guest customer user (matched by phone)
-  let user = await prisma.user.findUnique({ where: { phone } });
+  let user = await prisma.user.findUnique({ where: { phone }, include: { customer: true } });
+  if (user?.customer?.blocked) {
+    return res.status(403).json({
+      error: { code: 'CUSTOMER_BLOCKED', message: 'לא ניתן לקבוע תור. אנא צור קשר עם המספרה.' },
+    });
+  }
   if (!user) {
     const randomPwd = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
     user = await prisma.user.create({
