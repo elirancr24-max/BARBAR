@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { MessageSquare, Save, RotateCcw, Power, Info } from 'lucide-react';
+import { MessageSquare, Save, RotateCcw, Power, Info, Phone } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,31 @@ export default function BarberMessagesPage() {
     queryKey: ['my-templates'],
     queryFn: async () => (await api.get<{ templates: TemplateItem[] }>('/employees/me/templates')).data,
     retry: 1,
+  });
+
+  // WhatsApp phone config
+  const { data: phoneData } = useQuery({
+    queryKey: ['my-whatsapp-phone'],
+    queryFn: async () => (await api.get<{ whatsappPhone: string | null; effective: string | null; fallbackPhone: string | null }>('/employees/me/whatsapp-phone')).data,
+  });
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneDirty, setPhoneDirty] = useState(false);
+  useEffect(() => {
+    if (phoneData) {
+      setPhoneInput(phoneData.whatsappPhone || '');
+      setPhoneDirty(false);
+    }
+  }, [phoneData]);
+
+  const phoneMut = useMutation({
+    mutationFn: async () =>
+      api.put('/employees/me/whatsapp-phone', { whatsappPhone: phoneInput.trim() || null }),
+    onSuccess: () => {
+      toast.success('מספר וואטסאפ נשמר ✅');
+      setPhoneDirty(false);
+      qc.invalidateQueries({ queryKey: ['my-whatsapp-phone'] });
+    },
+    onError: () => toast.error('שגיאה בשמירת המספר'),
   });
 
   useEffect(() => {
@@ -92,7 +118,7 @@ export default function BarberMessagesPage() {
       <TopBar title="הודעות מוכנות" />
       <div className="p-4 lg:p-6 pb-24">
         <div className="max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
             <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/10 border border-primary/20">
               <MessageSquare className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div className="text-sm">
@@ -103,6 +129,48 @@ export default function BarberMessagesPage() {
                 </p>
               </div>
             </div>
+          </motion.div>
+
+          {/* WhatsApp phone configuration */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <Card className="p-4 mb-6 border-emerald-500/30">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base">מספר וואטסאפ לקבלת הודעות</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    המספר שאליו לקוחות ישלחו הודעות וואטסאפ. אם תשאיר ריק — ישתמשו במספר החשבון שלך
+                    {phoneData?.fallbackPhone && <> (<span className="font-mono">{phoneData.fallbackPhone}</span>)</>}.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 items-stretch">
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  dir="ltr"
+                  placeholder="050-1234567 או 972501234567"
+                  value={phoneInput}
+                  onChange={(e) => { setPhoneInput(e.target.value); setPhoneDirty(true); }}
+                  className="flex-1 font-mono"
+                />
+                <Button
+                  variant="gold"
+                  disabled={!phoneDirty || phoneMut.isPending}
+                  onClick={() => phoneMut.mutate()}
+                >
+                  <Save className="w-4 h-4 ms-1" />
+                  שמור
+                </Button>
+              </div>
+              {phoneData?.effective && (
+                <p className="text-xs mt-2 text-muted-foreground">
+                  לקוחות נשלחים כרגע אל: <span className="font-mono font-semibold text-emerald-600">{phoneData.effective}</span>
+                </p>
+              )}
+            </Card>
           </motion.div>
 
           {isLoading ? (

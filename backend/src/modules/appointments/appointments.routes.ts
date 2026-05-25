@@ -80,9 +80,14 @@ router.post('/', requireAuth, validate(createSchema), async (req, res) => {
         businessName: env.BUSINESS_NAME,
         notes: created.notes,
       });
-      if (enabled && created.employee.user.phone) {
+      const employeeRecord = await prisma.employee.findUnique({
+        where: { id: created.employeeId },
+        select: { whatsappPhone: true },
+      });
+      const targetPhone = employeeRecord?.whatsappPhone || created.employee.user.phone;
+      if (enabled && targetPhone) {
         barberWhatsapp = {
-          url: buildWhatsAppUrl(created.employee.user.phone, message),
+          url: buildWhatsAppUrl(targetPhone, message),
           message,
         };
       }

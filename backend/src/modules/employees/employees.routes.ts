@@ -40,6 +40,34 @@ async function resolveEmployeeForUser(userId: string, role: string, paramId: str
   return emp;
 }
 
+// GET WhatsApp phone configured for this barber (falls back to user.phone)
+router.get('/:id/whatsapp-phone', requireAuth, requireRole('ADMIN', 'BARBER'), async (req, res, next) => {
+  try {
+    const emp = await resolveEmployeeForUser(req.user!.sub, req.user!.role, req.params.id);
+    const user = await prisma.user.findUnique({ where: { id: emp.userId }, select: { phone: true } });
+    res.json({
+      whatsappPhone: emp.whatsappPhone || null,
+      effective: emp.whatsappPhone || user?.phone || null,
+      fallbackPhone: user?.phone || null,
+    });
+  } catch (e) { next(e); }
+});
+
+router.put('/:id/whatsapp-phone', requireAuth, requireRole('ADMIN', 'BARBER'),
+  validate(z.object({ whatsappPhone: z.string().min(5).max(40).nullable() })),
+  async (req, res, next) => {
+    try {
+      const emp = await resolveEmployeeForUser(req.user!.sub, req.user!.role, req.params.id);
+      const { whatsappPhone } = req.body as { whatsappPhone: string | null };
+      const updated = await prisma.employee.update({
+        where: { id: emp.id },
+        data: { whatsappPhone: whatsappPhone ? whatsappPhone.trim() : null },
+      });
+      await auditFromReq(req, 'employee.whatsapp-phone.update', 'Employee', emp.id, emp.whatsappPhone, updated.whatsappPhone);
+      res.json({ ok: true, whatsappPhone: updated.whatsappPhone });
+    } catch (e) { next(e); }
+  });
+
 // GET templates (defaults merged with employee overrides)
 router.get('/:id/templates', requireAuth, requireRole('ADMIN', 'BARBER'), async (req, res, next) => {
   try {

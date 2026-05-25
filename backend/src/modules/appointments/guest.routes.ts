@@ -94,9 +94,15 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
       businessName: env.BUSINESS_NAME,
       notes: appointment.notes,
     });
-    if (enabled && appointment.employee.user.phone) {
+    // Use barber's configured WhatsApp phone if set, else fall back to account phone
+    const employeeRecord = await prisma.employee.findUnique({
+      where: { id: appointment.employeeId },
+      select: { whatsappPhone: true },
+    });
+    const targetPhone = employeeRecord?.whatsappPhone || appointment.employee.user.phone;
+    if (enabled && targetPhone) {
       barberWhatsapp = {
-        url: buildWhatsAppUrl(appointment.employee.user.phone, message),
+        url: buildWhatsAppUrl(targetPhone, message),
         message,
       };
     }
