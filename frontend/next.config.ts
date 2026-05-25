@@ -2,6 +2,13 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  eslint: {
+    // Skip ESLint during production build (we run lint separately in CI/dev)
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
   },
