@@ -305,6 +305,21 @@ function BookingDetails({
         </div>
       </Card>
 
+      {/* Cancellation policy — Consumer Protection Law */}
+      <Card className="p-5">
+        <h3 className="font-semibold mb-2">מדיניות ביטולים</h3>
+        <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+          ניתן לבטל תור עד פרק הזמן שנקבע במדיניות המספרה. ביטול מאוחר עלול לחייב בדמי ביטול בהתאם לחוק הגנת הצרכן.
+        </p>
+        <Link
+          href="/cancellation-policy"
+          target="_blank"
+          className="text-xs text-primary underline-offset-2 hover:underline"
+        >
+          קרא את המדיניות המלאה
+        </Link>
+      </Card>
+
       <div className="text-center pt-2">
         <Button asChild variant="ghost">
           <Link href="/">חזרה לדף הבית</Link>

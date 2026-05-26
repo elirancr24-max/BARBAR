@@ -14,6 +14,11 @@ export interface PublicBusinessSettings {
   facebookUrl: string | null;
   mapEmbedUrl: string | null;
   businessHours: string | null;
+  // Consumer protection
+  selfCancelCutoffHr: number;
+  allowSelfCancel: boolean;
+  cancellationPolicyText: string | null;
+  refundPolicyText: string | null;
 }
 
 // Uses the PUBLIC endpoint, works for unauthed visitors.

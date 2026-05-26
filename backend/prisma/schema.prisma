@@ -272,6 +272,9 @@ model BusinessSettings {
   facebookUrl          String?
   mapEmbedUrl          String?
   businessHours        String?
+  // Consumer protection (Agent Q) — חוק הגנת הצרכן
+  cancellationPolicyText String?
+  refundPolicyText       String?
   updatedAt            DateTime @updatedAt
 }
 

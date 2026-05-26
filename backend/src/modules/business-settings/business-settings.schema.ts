@@ -33,6 +33,9 @@ export const updateBusinessSettingsSchema = z
     facebookUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
     mapEmbedUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
     businessHours: z.string().max(500).nullable().optional(),
+    // Consumer protection (Agent Q) — חוק הגנת הצרכן
+    cancellationPolicyText: z.string().max(10000).nullable().optional(),
+    refundPolicyText: z.string().max(10000).nullable().optional(),
   })
   .strict();
 

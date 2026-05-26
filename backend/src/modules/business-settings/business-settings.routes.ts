@@ -21,6 +21,11 @@ router.get('/public', async (_req, res) => {
     facebookUrl: s.facebookUrl,
     mapEmbedUrl: s.mapEmbedUrl,
     businessHours: s.businessHours,
+    // Consumer protection — public so booking page and policy page can read them
+    selfCancelCutoffHr: s.selfCancelCutoffHr,
+    allowSelfCancel: s.allowSelfCancel,
+    cancellationPolicyText: s.cancellationPolicyText,
+    refundPolicyText: s.refundPolicyText,
   });
 });
 

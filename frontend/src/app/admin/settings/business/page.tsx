@@ -37,6 +37,8 @@ interface BusinessSettings {
   facebookUrl: string | null;
   mapEmbedUrl: string | null;
   businessHours: string | null;
+  cancellationPolicyText: string | null;
+  refundPolicyText: string | null;
 }
 
 type FormValues = Omit<BusinessSettings, 'id'>;
@@ -76,6 +78,8 @@ export default function BusinessSettingsPage() {
         facebookUrl: data.facebookUrl ?? '',
         mapEmbedUrl: data.mapEmbedUrl ?? '',
         businessHours: data.businessHours ?? '',
+        cancellationPolicyText: data.cancellationPolicyText ?? '',
+        refundPolicyText: data.refundPolicyText ?? '',
       });
     }
   }, [data, reset]);
@@ -106,6 +110,8 @@ export default function BusinessSettingsPage() {
         facebookUrl: values.facebookUrl || null,
         mapEmbedUrl: values.mapEmbedUrl || null,
         businessHours: values.businessHours || null,
+        cancellationPolicyText: values.cancellationPolicyText || null,
+        refundPolicyText: values.refundPolicyText || null,
       };
       return (await api.put<BusinessSettings>('/business-settings', payload)).data;
     },
@@ -309,6 +315,39 @@ export default function BusinessSettingsPage() {
                 min={0}
                 max={100}
                 {...register('defaultCommissionPct', { valueAsNumber: true })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cancellation & refund policy */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">מדיניות ביטולים והחזרים</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              נוסח חובה לפי חוק הגנת הצרכן, התשמ&quot;א-1981. הטקסטים יוצגו ללקוחות בעת קביעת תור, באישור התור,
+              ובדף מדיניות הביטולים הציבורי.
+            </p>
+            <div>
+              <Label htmlFor="cancellationPolicyText">מדיניות ביטולים</Label>
+              <textarea
+                id="cancellationPolicyText"
+                rows={8}
+                {...register('cancellationPolicyText')}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base resize-y"
+                placeholder="פרט את מדיניות הביטולים: תוך כמה זמן ניתן לבטל, דמי ביטול, חריגים..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="refundPolicyText">מדיניות החזרים</Label>
+              <textarea
+                id="refundPolicyText"
+                rows={6}
+                {...register('refundPolicyText')}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base resize-y"
+                placeholder="פרט את מדיניות ההחזרים: לוחות זמנים, אמצעי תשלום להחזר, חריגים..."
               />
             </div>
           </CardContent>
