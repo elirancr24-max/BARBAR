@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Star, Users, Phone, Mail, ChevronLeft, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,8 +23,7 @@ interface Customer {
 }
 
 export default function CustomersPage() {
-  const pathname = usePathname();
-  const basePath = pathname.startsWith('/barber') ? '/barber/customers' : '/admin/customers';
+  const basePath = '/admin/customers';
   const [q, setQ] = useState('');
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['customers', q],

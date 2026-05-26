@@ -28,7 +28,7 @@ export default function LoginPage() {
       setUser(data.user);
       toast.success('ברוך הבא!');
       const role = data.user.role;
-      router.push(role === 'ADMIN' ? '/admin/dashboard' : role === 'BARBER' ? '/barber/calendar' : '/my/appointments');
+      router.push(role === 'ADMIN' || role === 'BARBER' ? '/admin/dashboard' : '/my/appointments');
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: { message?: string } } } };
       toast.error(err.response?.data?.error?.message || 'שגיאה');

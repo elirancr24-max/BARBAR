@@ -20,6 +20,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      { source: '/barber', destination: '/admin/profile', permanent: true },
+      { source: '/barber/calendar', destination: '/admin/calendar', permanent: true },
+      { source: '/barber/availability', destination: '/admin/profile?tab=hours', permanent: true },
+      { source: '/barber/time-off', destination: '/admin/profile?tab=timeoff', permanent: true },
+      { source: '/barber/customers', destination: '/admin/customers', permanent: true },
+      { source: '/barber/customers/:id', destination: '/admin/customers/:id', permanent: true },
+      { source: '/barber/messages', destination: '/admin/profile?tab=templates', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronLeft, Clock, Scissors, User as UserIcon, Calendar as CalendarIcon, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { Check, ChevronLeft, Clock, Scissors, Calendar as CalendarIcon, Phone, Mail, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -17,7 +16,6 @@ import { cn, formatAgorot, formatTime } from '@/lib/utils';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
 interface Service { id: string; name: string; description?: string|null; durationMin: number; priceAgorot: number; color: string; }
-interface Employee { id: string; user: { id: string; fullName: string }; color: string; bio?: string|null; }
 interface Slot { start: string; end: string; }
 interface BookingResult {
   id: string;
@@ -29,7 +27,7 @@ interface BookingResult {
   barberWhatsapp?: { url: string; message: string } | null;
 }
 
-const steps = ['שירות', 'ספר', 'תאריך ושעה', 'פרטים ואישור'];
+const steps = ['שירות', 'תאריך ושעה', 'פרטים ואישור'];
 
 function getGuestId(): string {
   if (typeof window === 'undefined') return '';
@@ -42,10 +40,8 @@ function getGuestId(): string {
 }
 
 export default function BookPage() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState<string | null>(null);
-  const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [slot, setSlot] = useState<Slot | null>(null);
   const [lockId, setLockId] = useState<string | null>(null);
@@ -59,28 +55,22 @@ export default function BookPage() {
     queryKey: ['services'],
     queryFn: async () => (await api.get<Service[]>('/services')).data,
   });
-  const { data: employees = [] } = useQuery({
-    queryKey: ['employees'],
-    queryFn: async () => (await api.get<Employee[]>('/employees')).data,
-  });
   const { data: slots = [], isLoading: slotsLoading } = useQuery({
-    queryKey: ['availability', employeeId, date, serviceId],
-    enabled: !!employeeId && !!serviceId,
+    queryKey: ['availability', date, serviceId],
+    enabled: !!serviceId,
     queryFn: async () => {
       const { data } = await api.get<{ slots: Slot[] }>('/availability', {
-        params: { employeeId, date, serviceId },
+        params: { date, serviceId },
       });
       return data.slots;
     },
   });
 
   const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
-  const selectedEmployee = useMemo(() => employees.find((e) => e.id === employeeId), [employees, employeeId]);
 
   const lockMutation = useMutation({
     mutationFn: async (s: Slot) => {
       const { data } = await api.post<{ lockId: string; ownerId: string }>('/slots/lock', {
-        employeeId,
         startAt: s.start,
         guestId: ownerId,
       });
@@ -89,7 +79,7 @@ export default function BookPage() {
     onSuccess: (data, s) => {
       setSlot(s);
       setLockId(data.lockId);
-      setStep(3);
+      setStep(2);
     },
     onError: (e: unknown) => {
       const err = e as { response?: { data?: { error?: { message?: string } } } };
@@ -103,7 +93,6 @@ export default function BookPage() {
         fullName: contact.fullName,
         phone: contact.phone,
         email: contact.email || undefined,
-        employeeId,
         serviceId,
         startAt: slot!.start,
         notes: contact.notes || undefined,
@@ -135,11 +124,11 @@ export default function BookPage() {
     },
   });
 
-  // Release lock if leaving step 3 without confirming
+  // Release lock if leaving the page without confirming
   useEffect(() => {
     return () => {
-      if (lockId && slot && employeeId && !result) {
-        api.delete('/slots/lock', { data: { lockId, employeeId, startAt: slot.start, ownerId } }).catch(() => {});
+      if (lockId && slot && !result) {
+        api.delete('/slots/lock', { data: { lockId, startAt: slot.start, ownerId } }).catch(() => {});
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,7 +157,6 @@ export default function BookPage() {
               <div className="space-y-3 text-start bg-secondary/40 rounded-xl p-5 mb-6">
                 <Row label="קוד אישור" value={result.confirmation} highlight />
                 <Row label="שירות" value={result.service} />
-                <Row label="ספר" value={result.employee} />
                 <Row label="מועד" value={new Date(result.startAt).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} />
                 <Row label="לתשלום" value={formatAgorot(result.priceAgorot)} />
               </div>
@@ -197,7 +185,7 @@ export default function BookPage() {
                 </Button>
                 <div className="flex gap-3">
                   <Button variant="outline" asChild className="flex-1"><Link href="/">חזרה לדף הבית</Link></Button>
-                  <Button variant="ghost" onClick={() => { setResult(null); setStep(0); setServiceId(null); setEmployeeId(null); setSlot(null); setLockId(null); setContact({ fullName: '', phone: '', email: '', notes: '' }); }} className="flex-1">תור נוסף</Button>
+                  <Button variant="ghost" onClick={() => { setResult(null); setStep(0); setServiceId(null); setSlot(null); setLockId(null); setContact({ fullName: '', phone: '', email: '', notes: '' }); }} className="flex-1">תור נוסף</Button>
                 </div>
               </div>
             </Card>
@@ -244,7 +232,7 @@ export default function BookPage() {
                 {services.map((s) => (
                   <Card
                     key={s.id}
-                    onClick={() => { setServiceId(s.id); setStep(1); }}
+                    onClick={() => { setServiceId(s.id); setStep(1); /* go to date */ }}
                     className={cn(
                       'p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all border-2 group',
                       serviceId === s.id ? 'border-primary' : 'border-transparent',
@@ -267,41 +255,9 @@ export default function BookPage() {
             </motion.div>
           )}
 
-          {/* Step 1 — Employee */}
+          {/* Step 1 — Date & Time */}
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
-                <UserIcon className="w-7 h-7 text-primary" />
-                בחר ספר
-              </h2>
-              <p className="text-muted-foreground mb-6">מי יטפל בך היום?</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {employees.map((e) => (
-                  <Card
-                    key={e.id}
-                    onClick={() => { setEmployeeId(e.id); setStep(2); }}
-                    className={cn(
-                      'p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all border-2 flex items-center gap-4',
-                      employeeId === e.id ? 'border-primary' : 'border-transparent',
-                    )}
-                  >
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shrink-0" style={{ background: e.color }}>
-                      {e.user.fullName.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold">{e.user.fullName}</h3>
-                      <div className="text-sm text-muted-foreground">{e.bio || 'ספר מקצועי'}</div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-              <Button variant="ghost" onClick={() => setStep(0)} className="mt-6"><ChevronLeft className="w-4 h-4 ms-2" /> חזור</Button>
-            </motion.div>
-          )}
-
-          {/* Step 2 — Date & Time */}
-          {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
                 <CalendarIcon className="w-7 h-7 text-primary" />
                 בחר תאריך ושעה
@@ -333,7 +289,6 @@ export default function BookPage() {
                         api.post('/waitlist', {
                           customerName: name,
                           customerPhone: phone,
-                          employeeId,
                           serviceId,
                           preferredDate: date ? new Date(date).toISOString() : undefined,
                         }).then(() => {
@@ -360,13 +315,13 @@ export default function BookPage() {
                   ))}
                 </div>
               )}
-              <Button variant="ghost" onClick={() => setStep(1)} className="mt-6"><ChevronLeft className="w-4 h-4 ms-2" /> חזור</Button>
+              <Button variant="ghost" onClick={() => setStep(0)} className="mt-6"><ChevronLeft className="w-4 h-4 ms-2" /> חזור</Button>
             </motion.div>
           )}
 
-          {/* Step 3 — Contact & Confirm */}
-          {step === 3 && slot && selectedService && selectedEmployee && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+          {/* Step 2 — Contact & Confirm */}
+          {step === 2 && slot && selectedService && (
+            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
               <h2 className="text-3xl font-bold mb-2 flex items-center gap-3">
                 <Check className="w-7 h-7 text-primary" />
                 פרטים ואישור
@@ -419,7 +374,6 @@ export default function BookPage() {
                   <h3 className="font-semibold text-lg mb-4">סיכום ההזמנה</h3>
                   <div className="space-y-3">
                     <Row label="שירות" value={selectedService.name} />
-                    <Row label="ספר" value={selectedEmployee.user.fullName} />
                     <Row label="תאריך" value={new Date(slot.start).toLocaleDateString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })} />
                     <Row label="שעה" value={formatTime(slot.start) + ' - ' + formatTime(slot.end)} />
                     <Row label="משך" value={`${selectedService.durationMin} דק'`} />
@@ -433,7 +387,7 @@ export default function BookPage() {
               </div>
 
               <div className="flex gap-3 mt-6">
-                <Button variant="ghost" onClick={() => { setStep(2); setSlot(null); setLockId(null); }} className="flex-1">חזור</Button>
+                <Button variant="ghost" onClick={() => { setStep(1); setSlot(null); setLockId(null); }} className="flex-1">חזור</Button>
                 <Button
                   variant="gold"
                   size="lg"
