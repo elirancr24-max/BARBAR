@@ -3,6 +3,7 @@ import { prisma } from '../../lib/prisma';
 import { NotFound, BadRequest } from '../../lib/errors';
 import { emitAppointmentEvent } from '../../lib/socket';
 import { invalidateAvailability } from '../availability/availability.service';
+import { publicLimiter } from '../../middleware/rateLimit';
 
 const router = Router();
 
@@ -37,7 +38,7 @@ router.post('/lookup', async (req, res) => {
 });
 
 // GET /bookings/:code — public lookup by confirmation code
-router.get('/:code', async (req, res, next) => {
+router.get('/:code', publicLimiter, async (req, res, next) => {
   const code = req.params.code;
   const a = await prisma.appointment.findUnique({
     where: { confirmationCode: code },
@@ -64,7 +65,7 @@ router.get('/:code', async (req, res, next) => {
 });
 
 // DELETE /bookings/:code — public cancel by code
-router.delete('/:code', async (req, res, next) => {
+router.delete('/:code', publicLimiter, async (req, res, next) => {
   const code = req.params.code;
   const a = await prisma.appointment.findUnique({
     where: { confirmationCode: code },

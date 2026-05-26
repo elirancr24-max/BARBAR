@@ -203,4 +203,20 @@ router.delete('/:id', requireAuth, requireRole('ADMIN'), async (req, res, next) 
   res.json({ ok: true });
 });
 
+// PUT /employees/:id/password — admin resets employee password
+router.put('/:id/password', requireAuth, requireRole('ADMIN'),
+  validate(z.object({ password: z.string().min(8).max(200) })),
+  async (req, res, next) => {
+    try {
+      const employeeId = req.params.id;
+      const emp = await prisma.employee.findUnique({ where: { id: employeeId } });
+      if (!emp) return next(NotFound('עובד לא נמצא'));
+      const { password } = req.body as { password: string };
+      const passwordHash = await bcrypt.hash(password, 12);
+      await prisma.user.update({ where: { id: emp.userId }, data: { passwordHash } });
+      await auditFromReq(req, 'employee.password.changed', 'Employee', employeeId);
+      res.json({ ok: true });
+    } catch (e) { next(e); }
+  });
+
 export default router;

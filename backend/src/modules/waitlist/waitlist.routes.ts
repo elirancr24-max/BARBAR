@@ -6,6 +6,7 @@ import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
 import { NotFound } from '../../lib/errors';
 import { getIO } from '../../lib/socket';
+import { publicLimiter } from '../../middleware/rateLimit';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ const createSchema = z.object({
 });
 
 // POST /waitlist (PUBLIC)
-router.post('/', validate(createSchema), async (req, res) => {
+router.post('/', publicLimiter, validate(createSchema), async (req, res) => {
   const dto = req.body as z.infer<typeof createSchema>;
   const entry = await prisma.waitlistEntry.create({
     data: {
