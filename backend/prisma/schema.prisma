@@ -170,6 +170,8 @@ model Appointment {
   depositMethod   String?
   depositRef      String?
 
+  recurringSeriesId String?
+
   payment Payment?
   photos  AppointmentPhoto[]
   review  Review?
@@ -180,6 +182,7 @@ model Appointment {
   @@index([status])
   @@index([confirmationCode])
   @@index([employeeId, status, startAt])
+  @@index([recurringSeriesId, startAt])
 }
 
 model AppointmentPhoto {

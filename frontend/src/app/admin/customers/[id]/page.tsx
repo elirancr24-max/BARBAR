@@ -58,6 +58,7 @@ interface Appointment {
   status: string;
   priceAgorot: number;
   notes: string | null;
+  recurringSeriesId?: string | null;
   service: { id: string; name: string };
   employee: { id: string; color: string; user: { fullName: string } };
 }
@@ -124,6 +125,19 @@ export default function CustomerDetailPage({ params }: Props) {
     onError: (e: unknown) => {
       const err = e as { response?: { data?: { error?: { message?: string } } } };
       toast.error(err.response?.data?.error?.message || 'שגיאה');
+    },
+  });
+
+  const cancelSeriesMut = useMutation({
+    mutationFn: async (seriesId: string) => (await api.delete(`/appointments/series/${seriesId}`)).data,
+    onSuccess: (data: { cancelled?: number }) => {
+      toast.success(`בוטלה סדרה (${data?.cancelled ?? 0} תורים)`);
+      qc.invalidateQueries({ queryKey: ['customer-history', id] });
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+    },
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { error?: { message?: string } } } };
+      toast.error(err.response?.data?.error?.message || 'שגיאה בביטול הסדרה');
     },
   });
 
@@ -462,6 +476,11 @@ export default function CustomerDetailPage({ params }: Props) {
                           <div className="text-end">
                             <div className="font-bold text-primary tabular-nums">{formatAgorot(h.priceAgorot)}</div>
                             <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full mt-0.5 inline-block', statusLabel[h.status].color)}>{statusLabel[h.status].label}</span>
+                            {h.recurringSeriesId && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full mt-0.5 inline-block bg-violet-500/15 text-violet-700 dark:text-violet-300 ms-1" title="חלק מסדרת תורים חוזרים">
+                                🔁 סדרה
+                              </span>
+                            )}
                           </div>
                           {(h.status === 'COMPLETED' || h.status === 'CONFIRMED') && (
                             <button
@@ -472,6 +491,21 @@ export default function CustomerDetailPage({ params }: Props) {
                               aria-label="רהבוקינג"
                             >
                               <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
+                          {h.recurringSeriesId && (h.status === 'PENDING' || h.status === 'CONFIRMED') && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm('לבטל את כל התורים העתידיים בסדרה זו?')) {
+                                  cancelSeriesMut.mutate(h.recurringSeriesId!);
+                                }
+                              }}
+                              disabled={cancelSeriesMut.isPending}
+                              className="w-9 h-9 rounded-md hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 transition-colors flex items-center justify-center"
+                              title="בטל סדרה"
+                              aria-label="בטל סדרה"
+                            >
+                              <XIcon className="w-4 h-4" />
                             </button>
                           )}
                         </CardContent>

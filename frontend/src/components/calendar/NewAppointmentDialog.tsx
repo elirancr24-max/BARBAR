@@ -37,6 +37,9 @@ export function NewAppointmentDialog({ open, onClose, defaultDate, forcedEmploye
   const [date, setDate] = useState<string>(() => (defaultDate || new Date()).toISOString().slice(0, 10));
   const [slot, setSlot] = useState<Slot | null>(null);
   const [notes, setNotes] = useState('');
+  const [recurring, setRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'>('WEEKLY');
+  const [count, setCount] = useState(4);
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -89,7 +92,19 @@ export function NewAppointmentDialog({ open, onClose, defaultDate, forcedEmploye
     mutationFn: async () => {
       // 1. Create or find customer
       const { data: customer } = await api.post('/customers/quick', { fullName, phone });
-      // 2. Create appointment
+      // 2. Create appointment (single or recurring series)
+      if (recurring) {
+        const { data } = await api.post('/appointments/series', {
+          customerUserId: customer.userId,
+          employeeId: myEmployeeId,
+          serviceId,
+          startAt: slot!.start,
+          notes: notes || undefined,
+          frequency,
+          count,
+        });
+        return { ...data, _series: true };
+      }
       const { data } = await api.post('/appointments', {
         customerUserId: customer.userId,
         employeeId: myEmployeeId,
@@ -99,8 +114,12 @@ export function NewAppointmentDialog({ open, onClose, defaultDate, forcedEmploye
       });
       return data;
     },
-    onSuccess: () => {
-      toast.success('🎉 התור נוסף ליומן');
+    onSuccess: (data: { _series?: boolean; appointments?: unknown[] }) => {
+      if (data?._series) {
+        toast.success(`🎉 נוצרה סדרת ${data.appointments?.length ?? count} תורים`);
+      } else {
+        toast.success('🎉 התור נוסף ליומן');
+      }
       qc.invalidateQueries({ queryKey: ['appointments'] });
       qc.invalidateQueries({ queryKey: ['availability'] });
       handleClose();
@@ -114,6 +133,7 @@ export function NewAppointmentDialog({ open, onClose, defaultDate, forcedEmploye
   function handleClose() {
     setFullName(''); setPhone(''); setServiceId(undefined); setSlot(null); setNotes('');
     setSearch(''); setCustomerLocked(false);
+    setRecurring(false); setFrequency('WEEKLY'); setCount(4);
     if (!forcedEmployeeId) setEmployeeId(undefined);
     onClose();
   }
@@ -316,6 +336,56 @@ export function NewAppointmentDialog({ open, onClose, defaultDate, forcedEmploye
                 <div className="space-y-2">
                   <Label className="text-xs">הערות (לא חובה)</Label>
                   <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="העדפות, אלרגיות, וכו'" />
+                </div>
+
+                {/* Recurring */}
+                <div className="space-y-2 rounded-lg border p-3 bg-secondary/20">
+                  <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={recurring}
+                      onChange={(e) => setRecurring(e.target.checked)}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    🔁 תור חוזר (סדרה)
+                  </label>
+                  {recurring && (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex flex-wrap gap-2">
+                        {([
+                          ['WEEKLY', 'שבועי'],
+                          ['BIWEEKLY', 'דו-שבועי'],
+                          ['MONTHLY', 'חודשי'],
+                        ] as const).map(([key, label]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setFrequency(key)}
+                            className={cn(
+                              'h-9 px-3 rounded-md border-2 text-sm font-medium transition-all',
+                              frequency === key
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-input hover:bg-accent',
+                            )}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs whitespace-nowrap">מספר תורים:</Label>
+                        <Input
+                          type="number"
+                          min={2}
+                          max={24}
+                          value={count}
+                          onChange={(e) => setCount(Math.max(2, Math.min(24, parseInt(e.target.value || '2', 10))))}
+                          className="w-20 h-9"
+                        />
+                        <span className="text-xs text-muted-foreground">(2–24)</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {selectedService && slot && (

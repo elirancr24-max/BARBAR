@@ -17,6 +17,8 @@ import { NotFound } from '../../lib/errors';
 import { assignReceiptNumber } from '../payments/receipt.service';
 import { cacheGet, cacheSet } from '../../lib/redis';
 import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
+import { createRecurringSeries, listSeries, cancelSeries } from './recurring.service';
+import { Forbidden } from '../../lib/errors';
 
 const IDEMPOTENCY_TTL_SEC = 600;
 function idemKey(key: string, userId: string): string {
@@ -366,6 +368,59 @@ router.post('/:id/whatsapp', requireAuth, requireRole('ADMIN', 'BARBER'), async 
   });
 
   res.json({ url, message });
+});
+
+// ───────────────── Recurring series ─────────────────
+
+const seriesCreateSchema = z.object({
+  employeeId: z.string().optional(),
+  serviceId: z.string(),
+  startAt: z.coerce.date(),
+  frequency: z.enum(['WEEKLY', 'BIWEEKLY', 'MONTHLY']),
+  count: z.number().int().min(2).max(24),
+  customerUserId: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+router.post('/series', requireAuth, validate(seriesCreateSchema), async (req, res) => {
+  const dto = req.body as z.infer<typeof seriesCreateSchema>;
+  const customerUserId =
+    (req.user!.role === 'ADMIN' || req.user!.role === 'BARBER') && dto.customerUserId
+      ? dto.customerUserId
+      : req.user!.sub;
+  const employeeId = dto.employeeId ?? (await getPrimaryEmployeeId());
+
+  const result = await createRecurringSeries({
+    customerUserId,
+    employeeId,
+    serviceId: dto.serviceId,
+    startAt: dto.startAt,
+    frequency: dto.frequency,
+    count: dto.count,
+    notes: dto.notes,
+  });
+  await auditFromReq(req, 'appointment.series.create', 'Appointment', result.seriesId, null, result);
+  res.status(201).json(result);
+});
+
+router.get('/series/:seriesId', requireAuth, async (req, res, next) => {
+  const list = await listSeries(req.params.seriesId);
+  if (list.length === 0) return next(NotFound('סדרה לא נמצאה'));
+  if (req.user!.role === 'CUSTOMER' && list[0].customerId !== req.user!.sub) {
+    return next(Forbidden());
+  }
+  res.json(list);
+});
+
+router.delete('/series/:seriesId', requireAuth, async (req, res, next) => {
+  const list = await listSeries(req.params.seriesId);
+  if (list.length === 0) return next(NotFound('סדרה לא נמצאה'));
+  if (req.user!.role === 'CUSTOMER' && list[0].customerId !== req.user!.sub) {
+    return next(Forbidden());
+  }
+  const result = await cancelSeries(req.params.seriesId);
+  await auditFromReq(req, 'appointment.series.cancel', 'Appointment', req.params.seriesId, null, result);
+  res.json(result);
 });
 
 export default router;
