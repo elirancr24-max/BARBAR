@@ -6,8 +6,19 @@ import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
 import { Forbidden, NotFound } from '../../lib/errors';
 import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
+import { importIsraeliHolidays } from './holidays-import';
 
 const router = Router();
+
+router.post('/import-holidays', requireAuth, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const result = await importIsraeliHolidays();
+    await auditFromReq(req, 'holidays.import', 'TimeOff', undefined, undefined, result);
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+});
 
 const timeOffSchema = z.object({
   employeeId: z.string().optional().nullable(),

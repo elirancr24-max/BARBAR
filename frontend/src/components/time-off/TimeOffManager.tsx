@@ -90,6 +90,19 @@ export function TimeOffManager({ scope }: Props) {
     },
   });
 
+  const importHolidaysMut = useMutation({
+    mutationFn: async () => (await api.post<{ imported: number; skipped: number }>('/time-off/import-holidays')).data,
+    onSuccess: (data) => {
+      toast.success(`יובאו ${data.imported} חגים (${data.skipped} כבר קיימים)`);
+      qc.invalidateQueries({ queryKey: ['time-off'] });
+      qc.invalidateQueries({ queryKey: ['availability'] });
+    },
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { error?: { message?: string } } } };
+      toast.error(err.response?.data?.error?.message || 'שגיאה בייבוא');
+    },
+  });
+
   const deleteMut = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/time-off/${id}`)).data,
     onSuccess: () => {
@@ -171,6 +184,23 @@ export function TimeOffManager({ scope }: Props) {
           <Button variant="outline" size="sm" onClick={() => quickBlock(14)}>
             <Calendar className="w-3.5 h-3.5 ms-1" /> שבועיים
           </Button>
+          {scope === 'admin' && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={importHolidaysMut.isPending}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: 'ייבוא חגי ישראל',
+                  description: 'לייבא את כל חגי ישראל לתאריכים הגלובליים?',
+                  confirmText: 'כן, ייבא',
+                });
+                if (ok) importHolidaysMut.mutate();
+              }}
+            >
+              <Globe className="w-3.5 h-3.5 ms-1" /> ייבוא חגי ישראל
+            </Button>
+          )}
         </div>
       </Card>
 

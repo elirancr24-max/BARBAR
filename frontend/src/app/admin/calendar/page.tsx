@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users } from 'lucide-react';
+import { Users, Printer } from 'lucide-react';
+import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { AppointmentCalendar } from '@/components/calendar/CalendarShell';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,14 @@ export default function AdminCalendarPage() {
               {e.user.fullName}
             </Button>
           ))}
+          <div className="flex-1" />
+          <Link
+            href={`/admin/calendar/print?date=${new Date().toISOString().slice(0, 10)}`}
+            target="_blank"
+            className="text-sm text-primary hover:underline flex items-center gap-1"
+          >
+            <Printer className="w-3.5 h-3.5" /> הדפס יום זה
+          </Link>
         </div>
 
         <AppointmentCalendar editable employeeIdFilter={employeeId} />
