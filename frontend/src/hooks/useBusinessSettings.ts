@@ -21,6 +21,11 @@ export interface PublicBusinessSettings {
   accessibilityOfficerPhone?: string | null;
   accessibilityOfficerEmail?: string | null;
   accessibilityStatementText?: string | null;
+  // Consumer protection
+  selfCancelCutoffHr?: number | null;
+  allowSelfCancel?: boolean | null;
+  cancellationPolicyText?: string | null;
+  refundPolicyText?: string | null;
 }
 
 // Uses the PUBLIC endpoint, works for unauthed visitors.

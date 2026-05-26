@@ -370,6 +370,8 @@ export default function LandingPage() {
           <Link href="/terms" className="hover:text-primary transition-colors">תנאי שימוש</Link>
           <span aria-hidden>·</span>
           <Link href="/accessibility-statement" className="hover:text-primary transition-colors">הצהרת נגישות</Link>
+          <span aria-hidden>·</span>
+          <Link href="/cancellation-policy" className="hover:text-primary transition-colors">מדיניות ביטולים</Link>
         </div>
         <div>
           © 2026 בר אברג׳יל · Hair Design

@@ -14,6 +14,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { api } from '@/lib/api';
 import { cn, formatAgorot, formatTime } from '@/lib/utils';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { useBusinessSettings } from '@/hooks/useBusinessSettings';
 
 interface Service { id: string; name: string; description?: string|null; durationMin: number; priceAgorot: number; color: string; }
 interface Slot { start: string; end: string; }
@@ -52,6 +53,9 @@ export default function BookPage() {
   const [result, setResult] = useState<BookingResult | null>(null);
 
   useEffect(() => { setOwnerId(getGuestId()); }, []);
+
+  const { data: bizSettings } = useBusinessSettings();
+  const cancelCutoffHr = bizSettings?.selfCancelCutoffHr ?? 4;
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
@@ -187,6 +191,19 @@ export default function BookPage() {
                 <Button variant="outline" asChild className="w-full h-12">
                   <Link href="/my-bookings">כל התורים שלי</Link>
                 </Button>
+                <div className="text-xs text-muted-foreground bg-secondary/40 border rounded-lg p-3 leading-relaxed text-start">
+                  <div className="font-medium text-foreground mb-1">מדיניות ביטולים</div>
+                  <div>
+                    ביטול עד {cancelCutoffHr} שעות לפני התור — ללא דמי ביטול.
+                  </div>
+                  <Link
+                    href="/cancellation-policy"
+                    target="_blank"
+                    className="text-primary underline-offset-2 hover:underline"
+                  >
+                    קרא את המדיניות המלאה
+                  </Link>
+                </div>
                 <div className="flex gap-3">
                   <Button variant="outline" asChild className="flex-1"><Link href="/">חזרה לדף הבית</Link></Button>
                   <Button variant="ghost" onClick={() => { setResult(null); setStep(0); setServiceId(null); setSlot(null); setLockId(null); setContact({ fullName: '', phone: '', email: '', notes: '' }); }} className="flex-1">תור נוסף</Button>
@@ -422,7 +439,22 @@ export default function BookPage() {
                 </Card>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              {/* Cancellation policy notice — required by Consumer Protection Law */}
+              <div className="mt-6 text-xs text-muted-foreground bg-secondary/40 border rounded-lg p-3 leading-relaxed">
+                <div>
+                  ביטול עד <span className="font-semibold text-foreground">{cancelCutoffHr} שעות</span> לפני התור — ללא דמי ביטול.
+                </div>
+                <a
+                  href="/cancellation-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  מדיניות ביטולים מלאה
+                </a>
+              </div>
+
+              <div className="flex gap-3 mt-4">
                 <Button variant="ghost" onClick={() => { setStep(1); setSlot(null); setLockId(null); }} className="flex-1">חזור</Button>
                 <Button
                   variant="gold"

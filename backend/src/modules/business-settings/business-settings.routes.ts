@@ -28,6 +28,11 @@ router.get('/public', async (_req, res) => {
     accessibilityOfficerPhone: s.accessibilityOfficerPhone,
     accessibilityOfficerEmail: s.accessibilityOfficerEmail,
     accessibilityStatementText: s.accessibilityStatementText,
+    // Consumer protection — public so booking page and policy page can read them
+    selfCancelCutoffHr: s.selfCancelCutoffHr,
+    allowSelfCancel: s.allowSelfCancel,
+    cancellationPolicyText: s.cancellationPolicyText,
+    refundPolicyText: s.refundPolicyText,
   });
 });
 

@@ -288,6 +288,9 @@ model BusinessSettings {
   accessibilityOfficerPhone  String?
   accessibilityOfficerEmail  String?
   accessibilityStatementText String?
+  // Consumer protection — חוק הגנת הצרכן
+  cancellationPolicyText String?
+  refundPolicyText       String?
   updatedAt            DateTime @updatedAt
 }
 

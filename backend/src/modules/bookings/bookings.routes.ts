@@ -140,7 +140,7 @@ router.post('/:code/cancel-with-token', publicLimiter, async (req, res, next) =>
   const cutoffHr = settings.selfCancelCutoffHr ?? 0;
   const minStart = new Date(Date.now() + cutoffHr * 60 * 60 * 1000);
   if (a.startAt <= minStart) {
-    return next(BadRequest(`לא ניתן לבטל בפחות מ-${cutoffHr} שעות לפני התור`));
+    return next(BadRequest(`לא ניתן לבטל פחות מ-${cutoffHr} שעות לפני התור — ראה מדיניות ביטולים`));
   }
 
   const apptId = await consumeToken(token);

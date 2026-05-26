@@ -41,6 +41,9 @@ export const updateBusinessSettingsSchema = z
     accessibilityOfficerPhone: z.string().max(40).nullable().optional(),
     accessibilityOfficerEmail: z.union([z.string().email(), z.literal(''), z.null()]).optional(),
     accessibilityStatementText: z.string().max(20000).nullable().optional(),
+    // Consumer protection — חוק הגנת הצרכן
+    cancellationPolicyText: z.string().max(10000).nullable().optional(),
+    refundPolicyText: z.string().max(10000).nullable().optional(),
   })
   .strict();
 

@@ -204,7 +204,7 @@ async function main() {
     });
   }
 
-  // --- Business Settings: ensure accessibility defaults exist ---
+  // --- Accessibility (IS 5568) defaults ---
   const accessibilityStatement = `הצהרת נגישות — בר אברג׳יל Hair Design
 
 אנו במספרה רואים חשיבות עליונה בנגישות האתר עבור כלל הגולשים, לרבות אנשים עם מוגבלויות, בהתאם לתקן הישראלי ת"י 5568 ולחוק שוויון זכויות לאנשים עם מוגבלות.
@@ -227,6 +227,41 @@ async function main() {
 
 עודכן לאחרונה: ${new Date().toISOString().split('T')[0]}`;
 
+  // --- Consumer Protection (חוק הגנת הצרכן) defaults ---
+  const cancellationPolicyText = [
+    'מדיניות ביטולים — בהתאם לחוק הגנת הצרכן, התשמ"א-1981 ותקנות עסקת מכר מרחוק.',
+    '',
+    '1. ביטול עסקה מקוונת:',
+    '   ניתן לבטל תור שנקבע באמצעות האתר עד 14 ימים מיום קביעת התור, ובלבד שהביטול ייעשה לפחות שני ימי עבודה לפני מועד מתן השירות.',
+    '',
+    '2. ביטול ללא דמי ביטול:',
+    '   ביטול עד 4 שעות לפני מועד התור — ללא דמי ביטול והחזר מלא אם שולם פיקדון.',
+    '',
+    '3. דמי ביטול:',
+    '   ביטול שלא במועד שנקבע לעיל יחויב בדמי ביטול של 5% מערך השירות או 100 ש"ח, הנמוך מבין השניים, כקבוע בחוק הגנת הצרכן.',
+    '',
+    '4. ביטול בשל פגם בשירות:',
+    '   במקרה של פגם בשירות, אי-התאמה או אי-קיום מצד העסק — לא ייגבו דמי ביטול והלקוח זכאי להחזר מלא.',
+    '',
+    '5. אוכלוסיות מיוחדות:',
+    '   אזרחים ותיקים (65+), אנשים עם מוגבלות ועולים חדשים (עד 5 שנים מיום העלייה) — רשאים לבטל עסקה בתוך 4 חודשים ממועד ההזמנה, בכפוף לכך שטרם התקיים מועד מתן השירות.',
+    '',
+    '6. אופן הביטול:',
+    '   ניתן לבטל דרך הקישור שנשלח באישור התור, דרך הדף "התורים שלי" באתר, או בפנייה ישירה לעסק בטלפון או בוואטסאפ.',
+  ].join('\n');
+
+  const refundPolicyText = [
+    'מדיניות החזרים:',
+    '',
+    '1. תשלום פיקדון שבוטל במועד — יוחזר במלואו תוך 14 ימי עסקים לאמצעי התשלום ממנו בוצעה ההפקדה.',
+    '',
+    '2. תשלום פיקדון שבוטל לאחר מועד הקאט-אוף — יוחזר בניכוי דמי ביטול חוקיים (5% או 100 ש"ח, הנמוך מביניהם).',
+    '',
+    '3. במקרה של אי-הגעה (No-Show) — הפיקדון אינו מוחזר.',
+    '',
+    '4. בקשה להחזר תוגש באמצעות פנייה לעסק. במקרה של מחלוקת, ניתן לפנות לרשות הגנת הצרכן.',
+  ].join('\n');
+
   await prisma.businessSettings.upsert({
     where: { id: 'singleton' },
     update: {
@@ -234,6 +269,8 @@ async function main() {
       accessibilityOfficerPhone: '972500000001',
       accessibilityOfficerEmail: 'bar@barabargil.local',
       accessibilityStatementText: accessibilityStatement,
+      cancellationPolicyText,
+      refundPolicyText,
     },
     create: {
       id: 'singleton',
@@ -242,6 +279,8 @@ async function main() {
       accessibilityOfficerPhone: '972500000001',
       accessibilityOfficerEmail: 'bar@barabargil.local',
       accessibilityStatementText: accessibilityStatement,
+      cancellationPolicyText,
+      refundPolicyText,
     },
   });
 
