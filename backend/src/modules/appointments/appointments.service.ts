@@ -7,6 +7,8 @@ import { forceReleaseAfterBooking } from './locking.service';
 import { invalidateAvailability } from '../availability/availability.service';
 import { sendPushToRole } from '../../lib/push';
 import { logger } from '../../lib/logger';
+import { getBusinessSettings } from '../../lib/businessSettings';
+import { createToken as createCancelToken } from './cancel-tokens.service';
 
 function generateConfirmationCode(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -48,6 +50,16 @@ export async function createAppointment(input: CreateInput) {
   const endAt = new Date(input.startAt.getTime() + service.durationMin * 60_000);
   const confirmationCode = await uniqueConfirmationCode();
 
+  // Look up customer's no-show history + business settings to decide on deposit.
+  const customerRow = await prisma.customer.findUnique({
+    where: { userId: input.customerUserId },
+    select: { noShowCount: true },
+  });
+  const settings = await getBusinessSettings();
+  const noShowCount = customerRow?.noShowCount ?? 0;
+  const threshold = settings?.noShowThreshold ?? 1;
+  const depositRequired = !!(settings?.requireDeposit && noShowCount >= threshold);
+
   // Conflict check within transaction
   const created = await prisma.$transaction(async (tx) => {
     const overlap = await tx.appointment.findFirst({
@@ -70,6 +82,7 @@ export async function createAppointment(input: CreateInput) {
         notes: input.notes,
         status: 'PENDING',
         confirmationCode,
+        depositRequired,
       },
       include: {
         service: true,
@@ -78,6 +91,29 @@ export async function createAppointment(input: CreateInput) {
       },
     });
   });
+
+  // Self-cancel token — valid until appointment endAt.
+  let cancelToken: string | undefined;
+  if (settings?.allowSelfCancel) {
+    try {
+      cancelToken = await createCancelToken(created.id, created.endAt);
+    } catch (err) {
+      logger.warn({ err, apptId: created.id }, 'Failed to create cancel token');
+    }
+  }
+
+  // Build Bit deposit link when applicable.
+  let depositBitLink: string | undefined;
+  if (
+    depositRequired &&
+    settings &&
+    (settings.depositMethod === 'BIT_LINK' || settings.depositMethod === 'BOTH') &&
+    settings.bitPhone
+  ) {
+    const normalizedBitPhone = settings.bitPhone.replace(/[^\d]/g, '');
+    const amountIls = (settings.depositAgorot ?? 0) / 100;
+    depositBitLink = `https://www.bitpay.co.il/app/me/${normalizedBitPhone}?amount=${amountIls}`;
+  }
 
   await forceReleaseAfterBooking(input.employeeId, input.startAt);
   await invalidateAvailability(input.employeeId, input.startAt);
@@ -115,7 +151,7 @@ export async function createAppointment(input: CreateInput) {
     logger.warn({ err }, 'Failed to dispatch new-appointment push');
   }
 
-  return created;
+  return { ...created, depositRequired, depositBitLink, cancelToken };
 }
 
 export async function listAppointments(params: {
