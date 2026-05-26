@@ -69,7 +69,7 @@ export default function ServicesPage() {
             <Card key={s.id}><CardContent className="p-5">
               <div className="flex justify-between items-start mb-2">
                 <div className="font-semibold text-lg">{s.name}</div>
-                <Button variant="ghost" size="icon" onClick={async () => {
+                <Button variant="ghost" size="icon" aria-label={`הסר שירות ${s.name}`} onClick={async () => {
                   const ok = await confirm({ title: 'להסיר שירות זה?', description: 'השירות יוסר מהמערכת.', confirmText: 'כן, הסר', variant: 'destructive' });
                   if (ok) deleteMut.mutate(s.id);
                 }}>

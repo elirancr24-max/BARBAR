@@ -60,8 +60,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-50 focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-md"
+        >
+          דלג לתוכן המרכזי
+        </a>
         <Providers>
-          {children}
+          <div id="main-content">{children}</div>
           <BottomTabBar />
         </Providers>
         <RegisterSW />

@@ -24,6 +24,10 @@ router.get('/public', async (_req, res) => {
     businessTaxId: s.businessTaxId,
     privacyPolicyText: s.privacyPolicyText,
     termsOfServiceText: s.termsOfServiceText,
+    accessibilityOfficerName: s.accessibilityOfficerName,
+    accessibilityOfficerPhone: s.accessibilityOfficerPhone,
+    accessibilityOfficerEmail: s.accessibilityOfficerEmail,
+    accessibilityStatementText: s.accessibilityStatementText,
   });
 });
 

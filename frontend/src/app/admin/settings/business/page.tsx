@@ -37,6 +37,10 @@ interface BusinessSettings {
   facebookUrl: string | null;
   mapEmbedUrl: string | null;
   businessHours: string | null;
+  accessibilityOfficerName: string | null;
+  accessibilityOfficerPhone: string | null;
+  accessibilityOfficerEmail: string | null;
+  accessibilityStatementText: string | null;
 }
 
 type FormValues = Omit<BusinessSettings, 'id'>;
@@ -76,6 +80,10 @@ export default function BusinessSettingsPage() {
         facebookUrl: data.facebookUrl ?? '',
         mapEmbedUrl: data.mapEmbedUrl ?? '',
         businessHours: data.businessHours ?? '',
+        accessibilityOfficerName: data.accessibilityOfficerName ?? '',
+        accessibilityOfficerPhone: data.accessibilityOfficerPhone ?? '',
+        accessibilityOfficerEmail: data.accessibilityOfficerEmail ?? '',
+        accessibilityStatementText: data.accessibilityStatementText ?? '',
       });
     }
   }, [data, reset]);
@@ -106,6 +114,10 @@ export default function BusinessSettingsPage() {
         facebookUrl: values.facebookUrl || null,
         mapEmbedUrl: values.mapEmbedUrl || null,
         businessHours: values.businessHours || null,
+        accessibilityOfficerName: values.accessibilityOfficerName || null,
+        accessibilityOfficerPhone: values.accessibilityOfficerPhone || null,
+        accessibilityOfficerEmail: values.accessibilityOfficerEmail || null,
+        accessibilityStatementText: values.accessibilityStatementText || null,
       };
       return (await api.put<BusinessSettings>('/business-settings', payload)).data;
     },
@@ -366,6 +378,45 @@ export default function BusinessSettingsPage() {
               <Input id="mapEmbedUrl" type="url" {...register('mapEmbedUrl')} placeholder="https://maps.google.com/maps?..." />
               <p className="text-xs text-muted-foreground mt-1">
                 הדבק כאן את ה-src של iframe ממפות גוגל (הקישור שבתוך iframe src=&quot;...&quot;).
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Accessibility (IS 5568) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">נגישות</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              פרטי רכז הנגישות והצהרת הנגישות של העסק (תקן ת"י 5568, WCAG 2.0 AA).
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="accessibilityOfficerName">שם רכז הנגישות</Label>
+                <Input id="accessibilityOfficerName" {...register('accessibilityOfficerName')} placeholder="שם מלא" />
+              </div>
+              <div>
+                <Label htmlFor="accessibilityOfficerPhone">טלפון רכז הנגישות</Label>
+                <Input id="accessibilityOfficerPhone" {...register('accessibilityOfficerPhone')} placeholder="050-000-0000" />
+              </div>
+              <div>
+                <Label htmlFor="accessibilityOfficerEmail">דוא"ל רכז הנגישות</Label>
+                <Input id="accessibilityOfficerEmail" type="email" {...register('accessibilityOfficerEmail')} placeholder="name@example.com" />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="accessibilityStatementText">טקסט הצהרת הנגישות</Label>
+              <textarea
+                id="accessibilityStatementText"
+                rows={10}
+                {...register('accessibilityStatementText')}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base resize-y"
+                placeholder="הצהרת הנגישות המלאה — מה נעשה, מגבלות ידועות, נוהל פנייה..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                הטקסט יוצג בעמוד <code>/accessibility-statement</code>.
               </p>
             </div>
           </CardContent>

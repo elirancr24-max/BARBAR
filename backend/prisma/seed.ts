@@ -204,6 +204,47 @@ async function main() {
     });
   }
 
+  // --- Business Settings: ensure accessibility defaults exist ---
+  const accessibilityStatement = `הצהרת נגישות — בר אברג׳יל Hair Design
+
+אנו במספרה רואים חשיבות עליונה בנגישות האתר עבור כלל הגולשים, לרבות אנשים עם מוגבלויות, בהתאם לתקן הישראלי ת"י 5568 ולחוק שוויון זכויות לאנשים עם מוגבלות.
+
+פעולות שננקטו להנגשת האתר:
+• תאימות לרמה AA של תקן WCAG 2.0.
+• ניווט מלא באמצעות מקלדת.
+• תמיכה בקוראי מסך (NVDA, JAWS, VoiceOver) עם תיאורי ARIA.
+• ניגודיות צבעים מספקת לטקסט מול הרקע.
+• קישור "דלג לתוכן המרכזי" בראש כל עמוד.
+• תיאורים חלופיים (alt) לכל התמונות החיוניות.
+• טפסים עם תוויות (label) ברורות.
+
+מגבלות ידועות:
+• חלק מהתמונות בגלריה הציבורית עשויות שלא לכלול תיאור מילולי מפורט.
+• ממשק היומן (לוח שנה) דורש שימוש בעכבר לגרירת תורים — קיימת אפשרות עריכה חלופית באמצעות לחיצה.
+
+נוהל פנייה בעניין נגישות:
+ניתן לפנות לרכז הנגישות של העסק בכל בעיה, שאלה או בקשה לשיפור הנגישות. נשתדל לטפל בפנייה תוך פרק זמן סביר.
+
+עודכן לאחרונה: ${new Date().toISOString().split('T')[0]}`;
+
+  await prisma.businessSettings.upsert({
+    where: { id: 'singleton' },
+    update: {
+      accessibilityOfficerName: 'בר אברג׳יל',
+      accessibilityOfficerPhone: '972500000001',
+      accessibilityOfficerEmail: 'bar@barabargil.local',
+      accessibilityStatementText: accessibilityStatement,
+    },
+    create: {
+      id: 'singleton',
+      businessName: 'בר אברג׳יל Hair Design',
+      accessibilityOfficerName: 'בר אברג׳יל',
+      accessibilityOfficerPhone: '972500000001',
+      accessibilityOfficerEmail: 'bar@barabargil.local',
+      accessibilityStatementText: accessibilityStatement,
+    },
+  });
+
   console.log('✅ Seed completed!');
   console.log('   Owner (Admin + Barber): bar@barabargil.local / Admin1234!');
   console.log('   Customer (demo):        customer@barabargil.local / Customer1234!');

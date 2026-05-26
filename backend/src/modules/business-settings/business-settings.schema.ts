@@ -36,6 +36,11 @@ export const updateBusinessSettingsSchema = z
     // Amendment 13 — legal text
     privacyPolicyText: z.string().max(20000).nullable().optional(),
     termsOfServiceText: z.string().max(20000).nullable().optional(),
+    // Accessibility (IS 5568)
+    accessibilityOfficerName: z.string().max(120).nullable().optional(),
+    accessibilityOfficerPhone: z.string().max(40).nullable().optional(),
+    accessibilityOfficerEmail: z.union([z.string().email(), z.literal(''), z.null()]).optional(),
+    accessibilityStatementText: z.string().max(20000).nullable().optional(),
   })
   .strict();
 

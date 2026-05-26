@@ -211,7 +211,7 @@ export function AppointmentCalendar({ editable = true, employeeIdFilter }: Props
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelected(null)}>
           <Card className="max-w-md w-full p-0 overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 pb-4 relative" style={{ background: statusStyles[selected.status].bg + '15' }}>
-              <button className="absolute start-4 top-4 text-muted-foreground hover:text-foreground" onClick={() => setSelected(null)}>
+              <button aria-label="סגור" className="absolute start-4 top-4 text-muted-foreground hover:text-foreground" onClick={() => setSelected(null)}>
                 <X className="w-5 h-5" />
               </button>
               <div className="flex items-center justify-between mb-3">
