@@ -193,11 +193,18 @@ export default function AboutPage() {
               </a>
             )}
           </div>
-          <div className="text-xs text-muted-foreground">
-            © 2026 {businessName} · Hair Design ·{' '}
-            <Link href="/" className="hover:text-primary transition-colors">
-              <ArrowRight className="w-3 h-3 inline ms-1" /> חזרה לבית
-            </Link>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <div>
+              © 2026 {businessName} · Hair Design ·{' '}
+              <Link href="/" className="hover:text-primary transition-colors">
+                <ArrowRight className="w-3 h-3 inline ms-1" aria-hidden="true" /> חזרה לבית
+              </Link>
+            </div>
+            <div>
+              <Link href="/accessibility-statement" className="hover:text-primary transition-colors">
+                הצהרת נגישות
+              </Link>
+            </div>
           </div>
         </footer>
       </div>

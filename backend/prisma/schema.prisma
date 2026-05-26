@@ -272,6 +272,11 @@ model BusinessSettings {
   facebookUrl          String?
   mapEmbedUrl          String?
   businessHours        String?
+  // Accessibility (IS 5568)
+  accessibilityOfficerName   String?
+  accessibilityOfficerPhone  String?
+  accessibilityOfficerEmail  String?
+  accessibilityStatementText String?
   updatedAt            DateTime @updatedAt
 }
 

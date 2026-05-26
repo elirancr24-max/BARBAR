@@ -287,7 +287,7 @@ export function TimeOffManager({ scope }: Props) {
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={async () => {
+                <Button variant="ghost" size="icon" aria-label="הסר חסימה" onClick={async () => {
                   const ok = await confirm({ title: 'להסיר חסימה?', description: 'הזמנים יחזרו להיות פנויים להזמנה.', confirmText: 'כן, הסר', variant: 'destructive' });
                   if (ok) deleteMut.mutate(t.id);
                 }}>

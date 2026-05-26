@@ -21,6 +21,10 @@ router.get('/public', async (_req, res) => {
     facebookUrl: s.facebookUrl,
     mapEmbedUrl: s.mapEmbedUrl,
     businessHours: s.businessHours,
+    accessibilityOfficerName: s.accessibilityOfficerName,
+    accessibilityOfficerPhone: s.accessibilityOfficerPhone,
+    accessibilityOfficerEmail: s.accessibilityOfficerEmail,
+    accessibilityStatementText: s.accessibilityStatementText,
   });
 });
 

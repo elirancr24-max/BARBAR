@@ -33,6 +33,11 @@ export const updateBusinessSettingsSchema = z
     facebookUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
     mapEmbedUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
     businessHours: z.string().max(500).nullable().optional(),
+    // Accessibility (IS 5568)
+    accessibilityOfficerName: z.string().max(120).nullable().optional(),
+    accessibilityOfficerPhone: z.string().max(40).nullable().optional(),
+    accessibilityOfficerEmail: z.union([z.string().email(), z.literal(''), z.null()]).optional(),
+    accessibilityStatementText: z.string().max(20000).nullable().optional(),
   })
   .strict();
 

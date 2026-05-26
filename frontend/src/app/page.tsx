@@ -275,7 +275,7 @@ export default function LandingPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={g.url}
-                    alt={g.service?.name || 'תספורת'}
+                    alt={`${g.kind === 'before' ? 'לפני · ' : g.kind === 'after' || g.kind === 'result' ? 'אחרי · ' : ''}${g.service?.name || 'עבודה מהמספרה'}${g.employee?.user?.fullName ? ` · ${g.employee.user.fullName}` : ''}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                   />
@@ -364,6 +364,8 @@ export default function LandingPage() {
           <Link href="/book" className="hover:text-primary transition-colors">קבע תור</Link>
           <span aria-hidden>·</span>
           <Link href="/my-bookings" className="hover:text-primary transition-colors">התורים שלי</Link>
+          <span aria-hidden>·</span>
+          <Link href="/accessibility-statement" className="hover:text-primary transition-colors">הצהרת נגישות</Link>
         </div>
         <div>
           © 2026 בר אברג׳יל · Hair Design
