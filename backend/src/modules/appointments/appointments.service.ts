@@ -1,12 +1,18 @@
 import crypto from 'crypto';
 import { prisma } from '../../lib/prisma';
 import type { AppointmentStatus } from '../../types/db';
-import { BadRequest, Conflict, NotFound, Forbidden } from '../../lib/errors';
+import { AppError, BadRequest, Conflict, NotFound, Forbidden } from '../../lib/errors';
 import { emitAppointmentEvent } from '../../lib/socket';
 import { forceReleaseAfterBooking } from './locking.service';
+import { acquireLock, releaseLock } from '../../lib/redis';
 import { invalidateAvailability } from '../availability/availability.service';
 import { sendPushToRole } from '../../lib/push';
 import { logger } from '../../lib/logger';
+
+const CREATE_LOCK_TTL_SEC = 15;
+function createLockKey(employeeId: string, startISO: string): string {
+  return `lock:create:${employeeId}:${startISO}`;
+}
 
 function generateConfirmationCode(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -48,36 +54,51 @@ export async function createAppointment(input: CreateInput) {
   const endAt = new Date(input.startAt.getTime() + service.durationMin * 60_000);
   const confirmationCode = await uniqueConfirmationCode();
 
-  // Conflict check within transaction
-  const created = await prisma.$transaction(async (tx) => {
-    const overlap = await tx.appointment.findFirst({
-      where: {
-        employeeId: input.employeeId,
-        status: { in: ['PENDING', 'CONFIRMED'] },
-        AND: [{ startAt: { lt: endAt } }, { endAt: { gt: input.startAt } }],
-      },
-    });
-    if (overlap) throw Conflict('הסלוט כבר תפוס');
+  // Race protection: acquire a short Redis lock on (employee, startAt) before the
+  // conflict-check transaction so two concurrent creates can't both pass the check.
+  const startISO = input.startAt.toISOString();
+  const lockKey = createLockKey(input.employeeId, startISO);
+  const lockValue = crypto.randomBytes(8).toString('hex');
+  const gotLock = await acquireLock(lockKey, CREATE_LOCK_TTL_SEC, lockValue);
+  if (!gotLock) {
+    throw new AppError(409, 'slot_taken', 'התור הזה זה עתה נתפס');
+  }
 
-    return tx.appointment.create({
-      data: {
-        customerId: input.customerUserId,
-        employeeId: input.employeeId,
-        serviceId: input.serviceId,
-        startAt: input.startAt,
-        endAt,
-        priceAgorot: service.priceAgorot,
-        notes: input.notes,
-        status: 'PENDING',
-        confirmationCode,
-      },
-      include: {
-        service: true,
-        employee: { include: { user: true } },
-        customer: { select: { id: true, fullName: true, phone: true, email: true } },
-      },
+  let created;
+  try {
+    // Conflict check within transaction
+    created = await prisma.$transaction(async (tx) => {
+      const overlap = await tx.appointment.findFirst({
+        where: {
+          employeeId: input.employeeId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+          AND: [{ startAt: { lt: endAt } }, { endAt: { gt: input.startAt } }],
+        },
+      });
+      if (overlap) throw Conflict('הסלוט כבר תפוס');
+
+      return tx.appointment.create({
+        data: {
+          customerId: input.customerUserId,
+          employeeId: input.employeeId,
+          serviceId: input.serviceId,
+          startAt: input.startAt,
+          endAt,
+          priceAgorot: service.priceAgorot,
+          notes: input.notes,
+          status: 'PENDING',
+          confirmationCode,
+        },
+        include: {
+          service: true,
+          employee: { include: { user: true } },
+          customer: { select: { id: true, fullName: true, phone: true, email: true } },
+        },
+      });
     });
-  });
+  } finally {
+    await releaseLock(lockKey, lockValue).catch(() => { /* lock may have expired — ignore */ });
+  }
 
   await forceReleaseAfterBooking(input.employeeId, input.startAt);
   await invalidateAvailability(input.employeeId, input.startAt);

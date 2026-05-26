@@ -15,6 +15,12 @@ import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { NotFound } from '../../lib/errors';
 import { assignReceiptNumber } from '../payments/receipt.service';
+import { cacheGet, cacheSet } from '../../lib/redis';
+
+const IDEMPOTENCY_TTL_SEC = 600;
+function idemKey(key: string, userId: string): string {
+  return `idem:appointment:${key}:${userId}`;
+}
 
 const router = Router();
 
@@ -58,6 +64,16 @@ router.post('/', requireAuth, validate(createSchema), async (req, res) => {
       ? dto.customerUserId
       : req.user!.sub;
 
+  // Idempotency-Key: replay an identical recent response if available
+  const idemHeader = req.header('Idempotency-Key');
+  const idemRedisKey = idemHeader ? idemKey(idemHeader, req.user!.sub) : null;
+  if (idemRedisKey) {
+    const cached = await cacheGet<{ status: number; body: unknown }>(idemRedisKey);
+    if (cached) {
+      return res.status(cached.status).json(cached.body);
+    }
+  }
+
   const created = await createAppointment({
     customerUserId,
     employeeId: dto.employeeId,
@@ -95,7 +111,11 @@ router.post('/', requireAuth, validate(createSchema), async (req, res) => {
     } catch { /* non-fatal */ }
   }
 
-  res.status(201).json({ ...created, barberWhatsapp });
+  const responseBody = { ...created, barberWhatsapp };
+  if (idemRedisKey) {
+    await cacheSet(idemRedisKey, { status: 201, body: responseBody }, IDEMPOTENCY_TTL_SEC);
+  }
+  res.status(201).json(responseBody);
 });
 
 router.patch('/:id', requireAuth, validate(updateSchema), async (req, res) => {
