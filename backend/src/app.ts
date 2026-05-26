@@ -35,6 +35,7 @@ import waitlistRoutes from './modules/waitlist/waitlist.routes';
 import photosRoutes from './modules/photos/photos.routes';
 import pushRoutes from './modules/push/push.routes';
 import marketingRoutes from './modules/marketing/marketing.routes';
+import { requireAuth, requireRole } from './middleware/auth';
 
 export function createApp(): Application {
   const app = express();
@@ -99,6 +100,12 @@ export function createApp(): Application {
   api.use('/waitlist', waitlistRoutes);
   api.use('/push', pushRoutes);
   api.use('/marketing', marketingRoutes);
+  api.get('/qr-info', requireAuth, requireRole('ADMIN'), (_req, res) => {
+    res.json({
+      bookingUrl: env.PUBLIC_URL.replace(/\/$/, '') + '/book',
+      businessName: env.BUSINESS_NAME,
+    });
+  });
   api.use('/', photosRoutes);
   app.use(env.API_PREFIX, api);
 
