@@ -105,8 +105,12 @@ router.get('/dashboard', async (_req, res) => {
   const endOfDay = new Date(startOfDay); endOfDay.setDate(endOfDay.getDate() + 1);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOf30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const startOf90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  // Week range = trailing 7 days from now; previous week = the 7 days before that
+  const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const startOfPrevWeek = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-  const [todayCount, monthRevenueAgg, cancelledCount, totalCustomers, repeating] = await Promise.all([
+  const [todayCount, monthRevenueAgg, cancelledCount, totalCustomers, repeating, nextAppt, weekAgg, prevWeekAgg, topCustomersGroup] = await Promise.all([
     prisma.appointment.count({
       where: { startAt: { gte: startOfDay, lt: endOfDay }, status: { in: ['PENDING', 'CONFIRMED', 'COMPLETED'] } },
     }),
@@ -124,7 +128,71 @@ router.get('/dashboard', async (_req, res) => {
       where: { startAt: { gte: startOf30 }, status: 'COMPLETED' },
       having: { id: { _count: { gt: 1 } } },
     }),
+    prisma.appointment.findFirst({
+      where: { startAt: { gte: now }, status: { in: ['PENDING', 'CONFIRMED'] } },
+      orderBy: { startAt: 'asc' },
+      include: { service: true, customer: { select: { id: true, fullName: true, phone: true } } },
+    }),
+    prisma.payment.aggregate({
+      _sum: { amountAgorot: true },
+      where: { status: 'PAID', paidAt: { gte: startOfWeek } },
+    }),
+    prisma.payment.aggregate({
+      _sum: { amountAgorot: true },
+      where: { status: 'PAID', paidAt: { gte: startOfPrevWeek, lt: startOfWeek } },
+    }),
+    prisma.payment.groupBy({
+      by: ['appointmentId'],
+      _sum: { amountAgorot: true },
+      where: { status: 'PAID', paidAt: { gte: startOf90 } },
+    }),
   ]);
+
+  // Aggregate top customers — map appointmentId → customer, then sum per customer
+  let topCustomers: { userId: string; customerId: string | null; fullName: string; totalAgorot: number; visits: number }[] = [];
+  if (topCustomersGroup.length > 0) {
+    const appts = await prisma.appointment.findMany({
+      where: { id: { in: topCustomersGroup.map((g) => g.appointmentId) } },
+      select: {
+        id: true,
+        customerId: true,
+        customer: { select: { id: true, fullName: true, customer: { select: { id: true } } } },
+      },
+    });
+    const apptById: Record<string, { userId: string; customerId: string | null; fullName: string }> = {};
+    for (const a of appts) apptById[a.id] = { userId: a.customerId, customerId: a.customer.customer?.id ?? null, fullName: a.customer.fullName };
+    const byCustomer: Record<string, { userId: string; customerId: string | null; fullName: string; totalAgorot: number; visits: number }> = {};
+    for (const g of topCustomersGroup) {
+      const info = apptById[g.appointmentId];
+      if (!info) continue;
+      if (!byCustomer[info.userId]) {
+        byCustomer[info.userId] = { userId: info.userId, customerId: info.customerId, fullName: info.fullName, totalAgorot: 0, visits: 0 };
+      }
+      byCustomer[info.userId].totalAgorot += g._sum.amountAgorot || 0;
+      byCustomer[info.userId].visits += 1;
+    }
+    topCustomers = Object.values(byCustomer).sort((a, b) => b.totalAgorot - a.totalAgorot).slice(0, 5);
+  }
+
+  const weekRevenue = weekAgg._sum.amountAgorot || 0;
+  const lastWeekRevenue = prevWeekAgg._sum.amountAgorot || 0;
+  const weekRevenueDelta = lastWeekRevenue === 0
+    ? (weekRevenue > 0 ? 100 : 0)
+    : Math.round(((weekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100);
+
+  let nextAppointment: null | {
+    id: string; time: string; customerName: string; customerPhone: string; serviceName: string; minutesUntil: number;
+  } = null;
+  if (nextAppt) {
+    nextAppointment = {
+      id: nextAppt.id,
+      time: nextAppt.startAt.toISOString(),
+      customerName: nextAppt.customer.fullName,
+      customerPhone: nextAppt.customer.phone,
+      serviceName: nextAppt.service.name,
+      minutesUntil: Math.max(0, Math.round((nextAppt.startAt.getTime() - now.getTime()) / 60000)),
+    };
+  }
 
   res.json({
     todayAppointments: todayCount,
@@ -132,6 +200,11 @@ router.get('/dashboard', async (_req, res) => {
     cancelledLast30: cancelledCount,
     totalCustomers,
     repeatingCustomers: repeating.length,
+    nextAppointment,
+    weekRevenue,
+    lastWeekRevenue,
+    weekRevenueDelta,
+    topCustomers,
   });
 });
 

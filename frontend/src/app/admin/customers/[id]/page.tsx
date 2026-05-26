@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight, Phone, Mail, Calendar as CalIcon, Clock, Scissors, User as UserIcon,
-  Star, MessageCircle, RotateCcw, ChevronRight, Cake, Tag, Plus, X as XIcon,
+  ArrowRight, Phone, Mail, Calendar as CalIcon,
+  Star, MessageCircle, RotateCcw, Cake, Tag, Plus, X as XIcon,
 } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,10 +16,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { LoyaltyCard } from '@/components/customers/LoyaltyCard';
+import { CustomerTimeline } from '@/components/customers/CustomerTimeline';
+import { AppointmentCard } from '@/components/appointments/AppointmentCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { api } from '@/lib/api';
-import { formatAgorot, formatDateHe, formatTime, cn } from '@/lib/utils';
+import { formatAgorot, cn } from '@/lib/utils';
 
 interface Customer {
   id: string;
@@ -61,14 +63,6 @@ interface Appointment {
   service: { id: string; name: string };
   employee: { id: string; color: string; user: { fullName: string } };
 }
-
-const statusLabel: Record<string, { label: string; color: string }> = {
-  PENDING:   { label: 'ממתין', color: 'bg-slate-500/15 text-slate-700 dark:text-slate-200' },
-  CONFIRMED: { label: 'אושר', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
-  COMPLETED: { label: 'הושלם', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-300' },
-  CANCELLED: { label: 'בוטל', color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300' },
-  NO_SHOW:   { label: 'לא הגיע', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
-};
 
 interface Props { params: Promise<{ id: string }>; }
 
@@ -440,46 +434,30 @@ export default function CustomerDetailPage({ params }: Props) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: Math.min(i * 0.03, 0.3) }}
                     >
-                      <Card className={cn('hover:shadow-md transition-all', h.status === 'CANCELLED' && 'opacity-50')}>
-                        <CardContent className="p-4 flex items-center gap-3 flex-wrap">
-                          <div className="text-center min-w-[60px]">
-                            <div className="text-xs text-muted-foreground tabular-nums">{new Date(h.startAt).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}</div>
-                            <div className="font-bold text-primary tabular-nums">{formatTime(h.startAt)}</div>
-                          </div>
-                          <div className="w-1 self-stretch rounded-full" style={{ background: h.employee.color }} />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium flex items-center gap-2">
-                              <Scissors className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                              {h.service.name}
-                            </div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-                              <UserIcon className="w-3 h-3" />
-                              <span style={{ color: h.employee.color }}>{h.employee.user.fullName}</span>
-                              <span className="opacity-50">·</span>
-                              <Clock className="w-3 h-3" /> {formatTime(h.startAt)}-{formatTime(h.endAt)}
-                            </div>
-                          </div>
-                          <div className="text-end">
-                            <div className="font-bold text-primary tabular-nums">{formatAgorot(h.priceAgorot)}</div>
-                            <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full mt-0.5 inline-block', statusLabel[h.status].color)}>{statusLabel[h.status].label}</span>
-                          </div>
-                          {(h.status === 'COMPLETED' || h.status === 'CONFIRMED') && (
-                            <button
-                              onClick={() => rebookMut.mutate(h.id)}
-                              disabled={rebookMut.isPending}
-                              className="w-9 h-9 rounded-md hover:bg-accent text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
-                              title="קבע שוב בעוד 4 שבועות"
-                              aria-label="רהבוקינג"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
-                          )}
-                        </CardContent>
-                      </Card>
+                      <AppointmentCard
+                        appointment={h}
+                        actions={(h.status === 'COMPLETED' || h.status === 'CONFIRMED') && (
+                          <button
+                            onClick={() => rebookMut.mutate(h.id)}
+                            disabled={rebookMut.isPending}
+                            className="w-9 h-9 rounded-md hover:bg-accent text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+                            title="קבע שוב בעוד 4 שבועות"
+                            aria-label="רהבוקינג"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        )}
+                      />
                     </motion.div>
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Timeline */}
+            <div>
+              <h3 className="font-display font-bold text-xl mb-3">ציר זמן</h3>
+              <CustomerTimeline customerId={id} />
             </div>
           </>
         )}
