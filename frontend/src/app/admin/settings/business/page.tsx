@@ -29,6 +29,14 @@ interface BusinessSettings {
   selfCancelCutoffHr: number;
   defaultCommissionPct: number;
   slotIntervalMin: number;
+  businessPhone: string | null;
+  heroTitle: string | null;
+  heroSubtitle: string | null;
+  aboutStory: string | null;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  mapEmbedUrl: string | null;
+  businessHours: string | null;
 }
 
 type FormValues = Omit<BusinessSettings, 'id'>;
@@ -60,6 +68,14 @@ export default function BusinessSettingsPage() {
         selfCancelCutoffHr: data.selfCancelCutoffHr,
         defaultCommissionPct: data.defaultCommissionPct,
         slotIntervalMin: data.slotIntervalMin ?? 30,
+        businessPhone: data.businessPhone ?? '',
+        heroTitle: data.heroTitle ?? '',
+        heroSubtitle: data.heroSubtitle ?? '',
+        aboutStory: data.aboutStory ?? '',
+        instagramUrl: data.instagramUrl ?? '',
+        facebookUrl: data.facebookUrl ?? '',
+        mapEmbedUrl: data.mapEmbedUrl ?? '',
+        businessHours: data.businessHours ?? '',
       });
     }
   }, [data, reset]);
@@ -82,6 +98,14 @@ export default function BusinessSettingsPage() {
         selfCancelCutoffHr: Number(values.selfCancelCutoffHr),
         defaultCommissionPct: Number(values.defaultCommissionPct),
         slotIntervalMin: Number(values.slotIntervalMin),
+        businessPhone: values.businessPhone || null,
+        heroTitle: values.heroTitle || null,
+        heroSubtitle: values.heroSubtitle || null,
+        aboutStory: values.aboutStory || null,
+        instagramUrl: values.instagramUrl || null,
+        facebookUrl: values.facebookUrl || null,
+        mapEmbedUrl: values.mapEmbedUrl || null,
+        businessHours: values.businessHours || null,
       };
       return (await api.put<BusinessSettings>('/business-settings', payload)).data;
     },
@@ -286,6 +310,63 @@ export default function BusinessSettingsPage() {
                 max={100}
                 {...register('defaultCommissionPct', { valueAsNumber: true })}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mini-site content */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">תוכן האתר</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              עורך את הטקסטים והקישורים שמופיעים בדף הבית ובדף האודות של האתר הציבורי.
+            </p>
+            <div>
+              <Label htmlFor="heroTitle">כותרת ראשית</Label>
+              <Input id="heroTitle" {...register('heroTitle')} placeholder="בר אברג׳יל" />
+            </div>
+            <div>
+              <Label htmlFor="heroSubtitle">תת-כותרת</Label>
+              <Input id="heroSubtitle" {...register('heroSubtitle')} placeholder="תספורת · עיצוב · סטייל" />
+            </div>
+            <div>
+              <Label htmlFor="aboutStory">סיפור על העסק</Label>
+              <textarea
+                id="aboutStory"
+                rows={6}
+                {...register('aboutStory')}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base resize-y"
+                placeholder="ספר ללקוחות על העסק, הסיפור, הערכים..."
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="businessPhone">טלפון תצוגה באתר</Label>
+                <Input id="businessPhone" {...register('businessPhone')} placeholder="050-000-0001" />
+              </div>
+              <div>
+                <Label htmlFor="businessHours">שעות פעילות לאתר</Label>
+                <Input id="businessHours" {...register('businessHours')} placeholder="א׳–ה׳ 10:00–20:00" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="instagramUrl">אינסטגרם</Label>
+                <Input id="instagramUrl" type="url" {...register('instagramUrl')} placeholder="https://www.instagram.com/..." />
+              </div>
+              <div>
+                <Label htmlFor="facebookUrl">פייסבוק</Label>
+                <Input id="facebookUrl" type="url" {...register('facebookUrl')} placeholder="https://www.facebook.com/..." />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="mapEmbedUrl">קוד הטמעת מפה</Label>
+              <Input id="mapEmbedUrl" type="url" {...register('mapEmbedUrl')} placeholder="https://maps.google.com/maps?..." />
+              <p className="text-xs text-muted-foreground mt-1">
+                הדבק כאן את ה-src של iframe ממפות גוגל (הקישור שבתוך iframe src=&quot;...&quot;).
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -260,6 +260,15 @@ model BusinessSettings {
   defaultCommissionPct Int      @default(0)
   // Availability slot interval (15 | 20 | 30, used by Agent F)
   slotIntervalMin      Int      @default(30)
+  // Editable mini-site fields (Agent K)
+  businessPhone        String?
+  heroTitle            String?
+  heroSubtitle         String?
+  aboutStory           String?
+  instagramUrl         String?
+  facebookUrl          String?
+  mapEmbedUrl          String?
+  businessHours        String?
   updatedAt            DateTime @updatedAt
 }
 
