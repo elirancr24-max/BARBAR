@@ -78,6 +78,7 @@ export interface TmplCtx {
   reviewLink?: string;
   bookingLink?: string;
   cancelLink?: string;
+  unsubscribeLink?: string;
 }
 
 export const TEMPLATE_LABELS: Record<TemplateKey, { label: string; description: string; toCustomer: boolean }> = {
@@ -145,9 +146,9 @@ export const defaultTemplates: Record<TemplateKey, string> = {
   slotAvailable:
     'שלום {customerName} 🎉\nהתפנה תור ב-{businessName}!\n\n📅 {dateTime}\n💈 {serviceName} עם {employeeName}\n\nלהזמנה מהירה: {bookingLink}\nרוצה? השב להודעה זו ונסגור עכשיו.',
   birthdayGreeting:
-    'מזל טוב {customerName}! 🎂 מאחלים לך יום הולדת שמח מ{businessName}. הזמן תור החודש ותקבל הפתעה קטנה ✂️',
+    '*פרסומת*\nמזל טוב {customerName}! 🎂 מאחלים לך יום הולדת שמח מ{businessName}. הזמן תור החודש ותקבל הפתעה קטנה ✂️\n\nמאת: {businessName}\nלהסרה מרשימת התפוצה: {unsubscribeLink}',
   campaignReengage:
-    'היי {customerName}, מזמן לא נפגשנו 💈 רוצה לבוא לתספורת? אני כאן בשבילך — {businessName}',
+    '*פרסומת*\nהיי {customerName}, מזמן לא נפגשנו 💈 רוצה לבוא לתספורת? אני כאן בשבילך — {businessName}\n\nמאת: {businessName}\nלהסרה מרשימת התפוצה: {unsubscribeLink}',
 };
 
 function applyVars(template: string, ctx: TmplCtx): string {
@@ -162,7 +163,8 @@ function applyVars(template: string, ctx: TmplCtx): string {
     .replace(/\{notes\}/g, ctx.notes || '')
     .replace(/\{reviewLink\}/g, ctx.reviewLink || '')
     .replace(/\{bookingLink\}/g, ctx.bookingLink || '')
-    .replace(/\{cancelLink\}/g, ctx.cancelLink || '');
+    .replace(/\{cancelLink\}/g, ctx.cancelLink || '')
+    .replace(/\{unsubscribeLink\}/g, ctx.unsubscribeLink || '');
 }
 
 interface EmployeeTemplateConfig {

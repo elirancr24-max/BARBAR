@@ -4,6 +4,7 @@ import { env } from '../config/env';
 import { writeAudit } from '../middleware/audit';
 import { renderTemplate, buildWhatsAppUrl, normalizePhone } from '../modules/notifications/whatsapp';
 import { getPrimaryEmployeeId } from './singleEmployee';
+import { makeUnsubscribeToken } from './marketingUnsubscribe';
 import { sendPushToRole } from './push';
 
 const INTERVAL_MS = 24 * 60 * 60 * 1000; // 24h
@@ -21,7 +22,8 @@ async function runBirthdayTick(): Promise<void> {
         role: 'CUSTOMER',
         active: true,
         birthday: { not: null },
-        customer: { blocked: false },
+        // Spam law (Amendment 40): only send to customers who have consented to marketing
+        customer: { blocked: false, marketingConsent: true },
       },
       select: {
         id: true,
@@ -69,12 +71,15 @@ async function runBirthdayTick(): Promise<void> {
         });
         if (existing) continue;
 
+        const publicBase = env.PUBLIC_URL.replace(/\/$/, '');
+        const unsubscribeLink = `${publicBase}/unsubscribe?t=${makeUnsubscribeToken(u.customer.id)}`;
         const { enabled, message } = await renderTemplate(employeeId, 'birthdayGreeting', {
           customerName: u.fullName,
           serviceName: '',
           employeeName: '',
           startAt: now,
           businessName: env.BUSINESS_NAME,
+          unsubscribeLink,
         });
         if (!enabled) continue;
 

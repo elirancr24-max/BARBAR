@@ -7,6 +7,7 @@ import {
   type TemplateKey,
 } from '../notifications/whatsapp';
 import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
+import { makeUnsubscribeToken } from '../../lib/marketingUnsubscribe';
 
 export type Segment =
   | 'dormant60d'
@@ -54,6 +55,8 @@ async function attachLastVisits(customerIds: string[]): Promise<Map<string, Date
 }
 
 export async function listCampaignCandidates(segment: string): Promise<Candidate[]> {
+  // Spam law (Amendment 40): ALWAYS filter to consenting customers only,
+  // regardless of segment. This is non-negotiable.
   const parsed = parseSegment(segment);
   if (!parsed) return [];
 
@@ -77,7 +80,7 @@ export async function listCampaignCandidates(segment: string): Promise<Candidate
     if (dormantUserIds.length === 0) return [];
 
     const customers = await prisma.customer.findMany({
-      where: { userId: { in: dormantUserIds }, blocked: false },
+      where: { userId: { in: dormantUserIds }, blocked: false, marketingConsent: true },
       include: { user: { select: { id: true, fullName: true, phone: true } } },
       take: LIMIT,
     });
@@ -99,7 +102,7 @@ export async function listCampaignCandidates(segment: string): Promise<Candidate
 
   if (parsed.kind === 'vip') {
     const customers = await prisma.customer.findMany({
-      where: { vip: true, blocked: false },
+      where: { vip: true, blocked: false, marketingConsent: true },
       include: { user: { select: { id: true, fullName: true, phone: true } } },
       take: LIMIT,
     });
@@ -120,7 +123,7 @@ export async function listCampaignCandidates(segment: string): Promise<Candidate
   if (parsed.kind === 'birthday_month') {
     const month = now.getMonth();
     const users = await prisma.user.findMany({
-      where: { role: 'CUSTOMER', birthday: { not: null }, active: true, customer: { blocked: false } },
+      where: { role: 'CUSTOMER', birthday: { not: null }, active: true, customer: { blocked: false, marketingConsent: true } },
       select: {
         id: true,
         fullName: true,
@@ -147,7 +150,7 @@ export async function listCampaignCandidates(segment: string): Promise<Candidate
 
   if (parsed.kind === 'tag' && parsed.tag) {
     const customers = await prisma.customer.findMany({
-      where: { blocked: false, tags: { contains: parsed.tag } },
+      where: { blocked: false, marketingConsent: true, tags: { contains: parsed.tag } },
       include: { user: { select: { id: true, fullName: true, phone: true } } },
       take: LIMIT,
     });
@@ -187,16 +190,19 @@ export async function previewBulkWhatsApp(
   const employeeId = await getPrimaryEmployeeId();
   const now = new Date();
 
+  const publicBase = env.PUBLIC_URL.replace(/\/$/, '');
   const out: PreviewItem[] = [];
   for (const c of candidates) {
     const normalized = normalizePhone(c.phone);
     if (!normalized) continue;
+    const unsubscribeLink = `${publicBase}/unsubscribe?t=${makeUnsubscribeToken(c.customerId)}`;
     const { enabled, message } = await renderTemplate(employeeId, templateKind, {
       customerName: c.name,
       serviceName: '',
       employeeName: '',
       startAt: now,
       businessName: env.BUSINESS_NAME,
+      unsubscribeLink,
     });
     if (!enabled) continue;
     const url = buildWhatsAppUrl(normalized, message);
@@ -226,16 +232,19 @@ export async function logBulkSent(
   const employeeId = await getPrimaryEmployeeId();
   const now = new Date();
 
+  const publicBase = env.PUBLIC_URL.replace(/\/$/, '');
   let logged = 0;
   for (const c of customers) {
     const phone = c.user.phone ? normalizePhone(c.user.phone) : null;
     if (!phone) continue;
+    const unsubscribeLink = `${publicBase}/unsubscribe?t=${makeUnsubscribeToken(c.id)}`;
     const { message } = await renderTemplate(employeeId, templateKind, {
       customerName: c.user.fullName,
       serviceName: '',
       employeeName: '',
       startAt: now,
       businessName: env.BUSINESS_NAME,
+      unsubscribeLink,
     });
     await prisma.notificationLog.create({
       data: {
