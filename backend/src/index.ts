@@ -9,6 +9,7 @@ import { prisma } from './lib/prisma';
 import { startReminderJob } from './lib/reminders';
 import { startNoShowCron } from './lib/noShowCron';
 import { startBirthdayCron } from './lib/birthdayCron';
+import { runSingleBarberCleanup } from './lib/autoCleanup';
 
 async function start() {
   const app = createApp();
@@ -17,6 +18,10 @@ async function start() {
 
   await redis.ping();
   await prisma.$queryRaw`SELECT 1`.catch(() => { /* ok */ });
+
+  // One-shot, idempotent: collapse to a single active employee on prod.
+  // Safe to call every boot — exits fast when only one employee exists.
+  await runSingleBarberCleanup();
 
   server.listen(env.PORT, () => {
     logger.info(`🚀 BarBar API listening on http://localhost:${env.PORT}`);
