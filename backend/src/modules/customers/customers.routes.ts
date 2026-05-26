@@ -4,9 +4,147 @@ import { prisma } from '../../lib/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
-import { NotFound } from '../../lib/errors';
+import { NotFound, Conflict } from '../../lib/errors';
 
 const router = Router();
+
+// ─── Data-subject rights (Amendment 13) — CUSTOMER self-service ───
+// Mounted under /customers, so paths are /customers/me/...
+
+router.get('/me/privacy-status', requireAuth, requireRole('CUSTOMER'), async (req, res, next) => {
+  const userId = req.user?.sub as string;
+  const c = await prisma.customer.findUnique({
+    where: { userId },
+    select: {
+      dataExportRequestedAt: true,
+      dataDeletionRequestedAt: true,
+      dataDeletionApprovedAt: true,
+      marketingConsent: true,
+    },
+  });
+  if (!c) return next(NotFound('פרופיל לקוח לא נמצא'));
+  res.json(c);
+});
+
+router.post('/me/data-export', requireAuth, requireRole('CUSTOMER'), async (req, res, next) => {
+  const userId = req.user?.sub as string;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      fullName: true,
+      birthday: true,
+      locale: true,
+      createdAt: true,
+    },
+  });
+  if (!user) return next(NotFound('משתמש לא נמצא'));
+
+  const customer = await prisma.customer.findUnique({
+    where: { userId },
+    select: {
+      notes: true,
+      vip: true,
+      tags: true,
+      totalVisits: true,
+      loyaltyPoints: true,
+      noShowCount: true,
+      marketingConsent: true,
+      marketingConsentAt: true,
+      termsAcceptedAt: true,
+      privacyAcceptedAt: true,
+      dataExportRequestedAt: true,
+      dataDeletionRequestedAt: true,
+      dataDeletionApprovedAt: true,
+    },
+  });
+
+  const appointments = await prisma.appointment.findMany({
+    where: { customerId: userId },
+    include: {
+      service: { select: { name: true, durationMin: true, priceAgorot: true } },
+      employee: { include: { user: { select: { fullName: true } } } },
+      payment: true,
+      review: { select: { rating: true, comment: true, createdAt: true } },
+      photos: { select: { id: true, kind: true, url: true, createdAt: true } },
+    },
+    orderBy: { startAt: 'desc' },
+  });
+
+  const appointmentIds = appointments.map((a) => a.id);
+  const payments = appointments.map((a) => a.payment).filter(Boolean);
+  const reviews = appointments
+    .filter((a) => a.review)
+    .map((a) => ({ appointmentId: a.id, ...a.review }));
+  const photos = appointments.flatMap((a) =>
+    a.photos.map((p) => ({ appointmentId: a.id, ...p })),
+  );
+
+  const notificationLogs = await prisma.notificationLog.findMany({
+    where: {
+      OR: [
+        { recipient: user.phone },
+        ...(appointmentIds.length > 0 ? [{ appointmentId: { in: appointmentIds } }] : []),
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  await prisma.customer.update({
+    where: { userId },
+    data: { dataExportRequestedAt: new Date() },
+  });
+
+  await auditFromReq(req, 'personal_data.export', 'Customer', userId);
+
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    user,
+    customer,
+    appointments: appointments.map((a) => ({
+      id: a.id,
+      startAt: a.startAt,
+      endAt: a.endAt,
+      status: a.status,
+      notes: a.notes,
+      priceAgorot: a.priceAgorot,
+      depositRequired: a.depositRequired,
+      depositPaidAt: a.depositPaidAt,
+      depositMethod: a.depositMethod,
+      cancelledAt: a.status === 'CANCELLED' ? a.updatedAt : null,
+      noShow: a.status === 'NO_SHOW',
+      service: a.service,
+      employee: { fullName: a.employee.user.fullName },
+    })),
+    payments,
+    reviews,
+    photos,
+    notifications: notificationLogs,
+  };
+
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="my-data-${userId}.json"`);
+  res.send(JSON.stringify(payload, null, 2));
+});
+
+router.post('/me/data-deletion-request', requireAuth, requireRole('CUSTOMER'), async (req, res, next) => {
+  const userId = req.user?.sub as string;
+  const c = await prisma.customer.findUnique({ where: { userId } });
+  if (!c) return next(NotFound('פרופיל לקוח לא נמצא'));
+  if (c.dataDeletionRequestedAt && !c.dataDeletionApprovedAt) {
+    return next(Conflict('בקשת מחיקה כבר ממתינה לאישור'));
+  }
+  const now = new Date();
+  await prisma.customer.update({
+    where: { userId },
+    data: { dataDeletionRequestedAt: now, dataDeletionApprovedAt: null },
+  });
+  await auditFromReq(req, 'personal_data.deletion_requested', 'Customer', userId);
+  res.json({ dataDeletionRequestedAt: now });
+});
+
 
 router.get('/', requireAuth, requireRole('ADMIN', 'BARBER'), async (req, res) => {
   const q = (req.query.q as string | undefined)?.trim();

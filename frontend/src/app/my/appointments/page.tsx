@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { Calendar, X } from 'lucide-react';
+import { Calendar, X, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -45,7 +45,15 @@ export default function MyAppointmentsPage() {
 
   return (
     <div className="container max-w-3xl py-6 lg:py-10 px-4 pb-24 lg:pb-10">
-      <h1 className="text-3xl font-bold mb-2">התורים שלי</h1>
+      <div className="flex items-start justify-between mb-2 gap-4">
+        <h1 className="text-3xl font-bold">התורים שלי</h1>
+        <Link
+          href="/my/privacy"
+          className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 mt-2 shrink-0"
+        >
+          <ShieldCheck className="w-4 h-4" /> המידע שלי
+        </Link>
+      </div>
       <p className="text-muted-foreground mb-8">ניהול ההזמנות שלך</p>
 
       <section className="mb-10">

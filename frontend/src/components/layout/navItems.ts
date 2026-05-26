@@ -1,4 +1,4 @@
-import { Scissors, LayoutDashboard, Calendar, Users, BarChart3, Settings, CalendarX, UserCircle2, Megaphone, QrCode } from 'lucide-react';
+import { Scissors, LayoutDashboard, Calendar, Users, BarChart3, Settings, CalendarX, UserCircle2, Megaphone, QrCode, ShieldCheck } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -11,6 +11,7 @@ export const adminNav: NavItem[] = [
   { href: '/admin/calendar', label: 'יומן', icon: Calendar },
   { href: '/admin/services', label: 'שירותים', icon: Scissors },
   { href: '/admin/customers', label: 'לקוחות', icon: Users },
+  { href: '/admin/privacy-requests', label: 'בקשות פרטיות', icon: ShieldCheck },
   { href: '/admin/time-off', label: 'חופשות', icon: CalendarX },
   { href: '/admin/qr', label: 'QR לתורים', icon: QrCode },
   { href: '/admin/reports', label: 'דוחות', icon: BarChart3 },
