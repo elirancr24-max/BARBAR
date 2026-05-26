@@ -42,3 +42,4 @@ backend/_check.mjs
 *.tsbuildinfo
 .eslintcache
 .claude/
+DEPLOY-NOW.md
