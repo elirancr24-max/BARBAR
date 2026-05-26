@@ -8,6 +8,8 @@ import { acquireLock, releaseLock } from '../../lib/redis';
 import { invalidateAvailability } from '../availability/availability.service';
 import { sendPushToRole } from '../../lib/push';
 import { logger } from '../../lib/logger';
+import { getBusinessSettings } from '../../lib/businessSettings';
+import { createToken as createCancelToken } from './cancel-tokens.service';
 
 const CREATE_LOCK_TTL_SEC = 15;
 function createLockKey(employeeId: string, startISO: string): string {
@@ -54,6 +56,16 @@ export async function createAppointment(input: CreateInput) {
   const endAt = new Date(input.startAt.getTime() + service.durationMin * 60_000);
   const confirmationCode = await uniqueConfirmationCode();
 
+  // Look up customer's no-show history + business settings to decide on deposit.
+  const customerRow = await prisma.customer.findUnique({
+    where: { userId: input.customerUserId },
+    select: { noShowCount: true },
+  });
+  const settings = await getBusinessSettings();
+  const noShowCount = customerRow?.noShowCount ?? 0;
+  const threshold = settings?.noShowThreshold ?? 1;
+  const depositRequired = !!(settings?.requireDeposit && noShowCount >= threshold);
+
   // Race protection: acquire a short Redis lock on (employee, startAt) before the
   // conflict-check transaction so two concurrent creates can't both pass the check.
   const startISO = input.startAt.toISOString();
@@ -88,6 +100,7 @@ export async function createAppointment(input: CreateInput) {
           notes: input.notes,
           status: 'PENDING',
           confirmationCode,
+          depositRequired,
         },
         include: {
           service: true,
@@ -98,6 +111,29 @@ export async function createAppointment(input: CreateInput) {
     });
   } finally {
     await releaseLock(lockKey, lockValue).catch(() => { /* lock may have expired — ignore */ });
+  }
+
+  // Self-cancel token — valid until appointment endAt.
+  let cancelToken: string | undefined;
+  if (settings?.allowSelfCancel) {
+    try {
+      cancelToken = await createCancelToken(created.id, created.endAt);
+    } catch (err) {
+      logger.warn({ err, apptId: created.id }, 'Failed to create cancel token');
+    }
+  }
+
+  // Build Bit deposit link when applicable.
+  let depositBitLink: string | undefined;
+  if (
+    depositRequired &&
+    settings &&
+    (settings.depositMethod === 'BIT_LINK' || settings.depositMethod === 'BOTH') &&
+    settings.bitPhone
+  ) {
+    const normalizedBitPhone = settings.bitPhone.replace(/[^\d]/g, '');
+    const amountIls = (settings.depositAgorot ?? 0) / 100;
+    depositBitLink = `https://www.bitpay.co.il/app/me/${normalizedBitPhone}?amount=${amountIls}`;
   }
 
   await forceReleaseAfterBooking(input.employeeId, input.startAt);
@@ -136,7 +172,7 @@ export async function createAppointment(input: CreateInput) {
     logger.warn({ err }, 'Failed to dispatch new-appointment push');
   }
 
-  return created;
+  return { ...created, depositRequired, depositBitLink, cancelToken };
 }
 
 export async function listAppointments(params: {

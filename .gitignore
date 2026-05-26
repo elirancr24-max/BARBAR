@@ -41,3 +41,4 @@ backend/_check.mjs
 # misc
 *.tsbuildinfo
 .eslintcache
+.claude/

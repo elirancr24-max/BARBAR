@@ -30,6 +30,8 @@ interface Customer {
   tags: string[];
   totalVisits: number;
   loyaltyPoints: number;
+  noShowCount?: number;
+  lastNoShowAt?: string | null;
   user: { id: string; fullName: string; email: string; phone: string; createdAt: string; birthday?: string | null };
 }
 
@@ -112,6 +114,18 @@ export default function CustomerDetailPage({ params }: Props) {
     if (!customer) return;
     updateMut.mutate({ tags: customer.tags.filter((t) => t !== label) });
   }
+
+  const resetNoShowMut = useMutation({
+    mutationFn: async () => (await api.post(`/customers/${id}/reset-no-show`)).data,
+    onSuccess: () => {
+      toast.success('סטטוס no-show אופס');
+      qc.invalidateQueries({ queryKey: ['customer', id] });
+    },
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { error?: { message?: string } } } };
+      toast.error(err.response?.data?.error?.message || 'שגיאה');
+    },
+  });
 
   const rebookMut = useMutation({
     mutationFn: async (appointmentId: string) => {
@@ -226,6 +240,41 @@ export default function CustomerDetailPage({ params }: Props) {
                   <div className="text-xs text-muted-foreground mt-1">ביקור אחרון</div>
                 </div>
               </div>
+            </Card>
+
+            {/* No-show status */}
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm">
+                    סטטוס no-show: <span className="font-bold tabular-nums">{customer.noShowCount ?? 0}</span>
+                    {(customer.noShowCount ?? 0) >= 2 && (
+                      <span className="ms-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-700 dark:text-red-300">
+                        סיכון
+                      </span>
+                    )}
+                  </div>
+                  {customer.lastNoShowAt && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      אחרון: {new Date(customer.lastNoShowAt).toLocaleDateString('he-IL')}
+                    </div>
+                  )}
+                </div>
+                {(customer.noShowCount ?? 0) > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (window.confirm('לאפס את מונה ה-no-show של הלקוח?')) {
+                        resetNoShowMut.mutate();
+                      }
+                    }}
+                    disabled={resetNoShowMut.isPending}
+                  >
+                    אפס
+                  </Button>
+                )}
+              </CardContent>
             </Card>
 
             {/* Loyalty punch card */}

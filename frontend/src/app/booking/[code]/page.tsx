@@ -39,6 +39,10 @@ interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
   priceAgorot: number;
   confirmationCode: string;
+  depositRequired?: boolean;
+  depositPaidAt?: string | null;
+  depositBitLink?: string | null;
+  depositAgorot?: number;
 }
 
 const statusMeta: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
@@ -229,6 +233,34 @@ function BookingDetails({
           </div>
         </div>
       </Card>
+
+      {/* Deposit required panel */}
+      {data.depositRequired && !data.depositPaidAt && (
+        <Card className="p-5 border-amber-400/60 bg-amber-50 dark:bg-amber-950/20 space-y-3">
+          <h3 className="font-display font-bold text-lg text-amber-800 dark:text-amber-300">
+            נדרש פיקדון לאישור התור
+          </h3>
+          <p className="text-sm text-amber-900/80 dark:text-amber-200/80">
+            {data.depositAgorot
+              ? `נא להעביר פיקדון של ${formatAgorot(data.depositAgorot)} לאישור התור.`
+              : 'נא להעביר פיקדון לאישור התור.'}
+          </p>
+          {data.depositBitLink ? (
+            <a
+              href={data.depositBitLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full h-12 rounded-md bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center justify-center"
+            >
+              שלם ב-Bit
+            </a>
+          ) : (
+            <p className="text-xs text-amber-800/70 dark:text-amber-200/70">
+              נא ליצור קשר עם המספרה לתשלום הפיקדון.
+            </p>
+          )}
+        </Card>
+      )}
 
       {/* Actions */}
       <Card className="p-5 space-y-2">

@@ -75,6 +75,7 @@ export interface TmplCtx {
   notes?: string | null;
   reviewLink?: string;
   bookingLink?: string;
+  cancelLink?: string;
 }
 
 export const TEMPLATE_LABELS: Record<TemplateKey, { label: string; description: string; toCustomer: boolean }> = {
@@ -120,7 +121,7 @@ export const defaultTemplates: Record<TemplateKey, string> = {
   confirm:
     'שלום {customerName} 👋\nהתור שלך ב-{businessName} אושר!\n\n💈 שירות: {serviceName}\n👤 ספר: {employeeName}\n📅 {dateTime}\n\nנשמח לראותך!',
   reminder:
-    'היי {customerName} ⏰\nתזכורת — יש לך תור מחר ב-{businessName}.\n\n💈 {serviceName} עם {employeeName}\n📅 {dateTime}\n\nנתראה!',
+    'היי {customerName} ⏰\nתזכורת — יש לך תור מחר ב-{businessName}.\n\n💈 {serviceName} עם {employeeName}\n📅 {dateTime}\n\nלביטול: {cancelLink}\n\nנתראה!',
   cancel:
     'שלום {customerName},\nהתור שלך ב-{businessName} ל-{dateTime} בוטל.\n\nאם תרצה לקבוע מחדש — נשמח לסייע 💈\nתודה על ההבנה.',
   change:
@@ -144,7 +145,8 @@ function applyVars(template: string, ctx: TmplCtx): string {
     .replace(/\{dateTime\}/g, dateTime)
     .replace(/\{notes\}/g, ctx.notes || '')
     .replace(/\{reviewLink\}/g, ctx.reviewLink || '')
-    .replace(/\{bookingLink\}/g, ctx.bookingLink || '');
+    .replace(/\{bookingLink\}/g, ctx.bookingLink || '')
+    .replace(/\{cancelLink\}/g, ctx.cancelLink || '');
 }
 
 interface EmployeeTemplateConfig {

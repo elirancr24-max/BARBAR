@@ -90,4 +90,23 @@ router.patch(
   },
 );
 
+// POST /customers/:id/reset-no-show — admin resets a customer's no-show counter to 0
+router.post('/:id/reset-no-show', requireAuth, requireRole('ADMIN'), async (req, res, next) => {
+  const before = await prisma.customer.findUnique({ where: { id: req.params.id } });
+  if (!before) return next(NotFound('לקוח לא נמצא'));
+  const updated = await prisma.customer.update({
+    where: { id: req.params.id },
+    data: { noShowCount: 0, lastNoShowAt: null },
+  });
+  await auditFromReq(
+    req,
+    'customer.reset_no_show',
+    'Customer',
+    updated.id,
+    { noShowCount: before.noShowCount, lastNoShowAt: before.lastNoShowAt },
+    { noShowCount: 0, lastNoShowAt: null },
+  );
+  res.json({ ok: true, noShowCount: 0 });
+});
+
 export default router;
