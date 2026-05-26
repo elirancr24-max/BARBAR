@@ -3,31 +3,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { Calendar, Clock, Scissors, User as UserIcon, X } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AppointmentCard } from '@/components/appointments/AppointmentCard';
 import { api } from '@/lib/api';
-import { formatAgorot, formatDateHe } from '@/lib/utils';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface Appointment {
   id: string;
   startAt: string;
+  endAt?: string;
   status: string;
   priceAgorot: number;
   service: { name: string };
   employee: { user: { fullName: string } };
+  payment?: { status?: string } | null;
+  review?: { rating?: number } | null;
+  recurringSeriesId?: string | null;
 }
-
-const statusLabels: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'ממתין לאישור', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' },
-  CONFIRMED: { label: 'אושר', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' },
-  COMPLETED: { label: 'הושלם', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400' },
-  CANCELLED: { label: 'בוטל', color: 'bg-rose-500/15 text-rose-700 dark:text-rose-400' },
-  NO_SHOW: { label: 'לא הגיע', color: 'bg-orange-500/15 text-orange-700 dark:text-orange-400' },
-};
 
 export default function MyAppointmentsPage() {
   const qc = useQueryClient();
@@ -70,38 +65,18 @@ export default function MyAppointmentsPage() {
         ) : (
           <div className="space-y-3">
             {upcoming.map((a) => (
-              <Card key={a.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <CardContent className="p-5">
-                  <div className="flex flex-wrap justify-between items-start mb-3 gap-2">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Scissors className="w-4 h-4 text-primary" />
-                        <span className="font-semibold text-lg">{a.service.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <UserIcon className="w-4 h-4" />
-                        {a.employee.user.fullName}
-                      </div>
-                    </div>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusLabels[a.status].color}`}>{statusLabels[a.status].label}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between pt-3 border-t gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      {formatDateHe(a.startAt)}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-primary text-lg">{formatAgorot(a.priceAgorot)}</span>
-                      <Button variant="ghost" size="sm" onClick={async () => {
-                        const ok = await confirm({ title: 'לבטל תור?', description: 'התור יבוטל והסלוט ישתחרר.', confirmText: 'כן, בטל', variant: 'destructive' });
-                        if (ok) cancelMut.mutate(a.id);
-                      }}>
-                        <X className="w-4 h-4 ms-1" /> בטל
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AppointmentCard
+                key={a.id}
+                appointment={a}
+                actions={
+                  <Button variant="ghost" size="sm" onClick={async () => {
+                    const ok = await confirm({ title: 'לבטל תור?', description: 'התור יבוטל והסלוט ישתחרר.', confirmText: 'כן, בטל', variant: 'destructive' });
+                    if (ok) cancelMut.mutate(a.id);
+                  }}>
+                    <X className="w-4 h-4 ms-1" /> בטל
+                  </Button>
+                }
+              />
             ))}
           </div>
         )}
@@ -112,15 +87,7 @@ export default function MyAppointmentsPage() {
           <h2 className="text-xl font-semibold mb-4">היסטוריה</h2>
           <div className="space-y-2">
             {past.slice(0, 10).map((a) => (
-              <Card key={a.id} className="opacity-70 hover:opacity-100 transition-opacity">
-                <CardContent className="p-4 flex flex-wrap justify-between items-center gap-2">
-                  <div>
-                    <div className="font-medium">{a.service.name}</div>
-                    <div className="text-sm text-muted-foreground">{formatDateHe(a.startAt)}</div>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${statusLabels[a.status].color}`}>{statusLabels[a.status].label}</span>
-                </CardContent>
-              </Card>
+              <AppointmentCard key={a.id} appointment={a} compact className="opacity-70 hover:opacity-100 transition-opacity" />
             ))}
           </div>
         </section>

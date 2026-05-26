@@ -52,6 +52,84 @@ router.get('/:id/history', requireAuth, requireRole('ADMIN', 'BARBER'), async (r
   res.json(appointments);
 });
 
+// GET /customers/:id/timeline — mixed item types (appointment/payment/review/photo/no_show), newest first, 200 most recent
+router.get('/:id/timeline', requireAuth, requireRole('ADMIN'), async (req, res, next) => {
+  const customer = await prisma.customer.findUnique({ where: { id: req.params.id } });
+  if (!customer) return next(NotFound('לקוח לא נמצא'));
+
+  const appointments = await prisma.appointment.findMany({
+    where: { customerId: customer.userId },
+    include: { service: true, payment: true, review: true, photos: true },
+    orderBy: { startAt: 'desc' },
+    take: 200,
+  });
+
+  type TimelineItem = {
+    date: string;
+    type: 'appointment' | 'payment' | 'review' | 'photo' | 'no_show';
+    appointmentId: string;
+    serviceName?: string;
+    status?: string;
+    amountAgorot?: number;
+    tipAgorot?: number;
+    rating?: number;
+    comment?: string | null;
+    photoUrl?: string;
+    photoKind?: string;
+  };
+
+  const items: TimelineItem[] = [];
+  for (const a of appointments) {
+    if (a.status === 'NO_SHOW') {
+      items.push({
+        date: a.startAt.toISOString(),
+        type: 'no_show',
+        appointmentId: a.id,
+        serviceName: a.service.name,
+        status: a.status,
+      });
+    } else {
+      items.push({
+        date: a.startAt.toISOString(),
+        type: 'appointment',
+        appointmentId: a.id,
+        serviceName: a.service.name,
+        status: a.status,
+      });
+    }
+    if (a.payment && a.payment.status === 'PAID' && a.payment.paidAt) {
+      items.push({
+        date: a.payment.paidAt.toISOString(),
+        type: 'payment',
+        appointmentId: a.id,
+        amountAgorot: a.payment.amountAgorot,
+        tipAgorot: a.payment.tipAgorot,
+      });
+    }
+    if (a.review) {
+      items.push({
+        date: a.review.createdAt.toISOString(),
+        type: 'review',
+        appointmentId: a.id,
+        rating: a.review.rating,
+        comment: a.review.comment,
+      });
+    }
+    for (const ph of a.photos) {
+      items.push({
+        date: ph.createdAt.toISOString(),
+        type: 'photo',
+        appointmentId: a.id,
+        photoUrl: ph.url,
+        photoKind: ph.kind,
+      });
+    }
+  }
+
+  items.sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime());
+  res.json(items.slice(0, 200));
+});
+
 router.patch(
   '/:id',
   requireAuth,
