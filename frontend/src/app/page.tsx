@@ -10,6 +10,16 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { PhotoMark } from '@/components/brand/PhotoMark';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useBusinessSettings } from '@/hooks/useBusinessSettings';
+
+interface ServiceItem {
+  id: string;
+  name: string;
+  description: string | null;
+  durationMin: number;
+  priceAgorot: number;
+  active: boolean;
+}
 
 interface Review {
   id: string;
@@ -39,6 +49,29 @@ function relativeHe(iso: string): string {
 }
 
 export default function LandingPage() {
+  const { data: settings } = useBusinessSettings();
+
+  const { data: services = [] } = useQuery({
+    queryKey: ['services', 'public'],
+    queryFn: async () => {
+      try {
+        return (await api.get<ServiceItem[]>('/services')).data;
+      } catch {
+        return [];
+      }
+    },
+    retry: false,
+  });
+
+  const businessName = settings?.businessName || 'בר אברג׳יל';
+  const heroTitle = settings?.heroTitle || businessName;
+  const heroSubtitle = settings?.heroSubtitle || 'תספורת · עיצוב · סטייל';
+  const phone = settings?.businessPhone || '050-000-0001';
+  const address = settings?.businessAddress || 'בניין העיגולים, אילת';
+  const hours = settings?.businessHours || 'ראשון–חמישי 10:00–20:00 · שישי–שבת סגור';
+  const instagramUrl = settings?.instagramUrl || 'https://www.instagram.com/barabrgil/';
+  const facebookUrl = settings?.facebookUrl || 'https://www.facebook.com/BarAbargilHairDesign/';
+
   const { data: gallery = [] } = useQuery({
     queryKey: ['gallery', 'public'],
     queryFn: async () => {
@@ -75,24 +108,28 @@ export default function LandingPage() {
       <header className="relative z-10 flex items-center justify-between px-6 py-5 lg:px-12">
         <PhotoMark size="sm" />
         <div className="flex items-center gap-2">
-          <a
-            href="https://www.instagram.com/barabrgil/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-10 h-10 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
-            aria-label="Instagram"
-          >
-            <Instagram className="w-5 h-5 text-muted-foreground" />
-          </a>
-          <a
-            href="https://www.facebook.com/BarAbargilHairDesign/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-10 h-10 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
-            aria-label="Facebook"
-          >
-            <Facebook className="w-5 h-5 text-muted-foreground" />
-          </a>
+          {instagramUrl && (
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-5 h-5 text-muted-foreground" />
+            </a>
+          )}
+          {facebookUrl && (
+            <a
+              href={facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
+              aria-label="Facebook"
+            >
+              <Facebook className="w-5 h-5 text-muted-foreground" />
+            </a>
+          )}
           <ThemeToggle />
         </div>
       </header>
@@ -113,7 +150,7 @@ export default function LandingPage() {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="font-display font-black text-5xl sm:text-6xl lg:text-7xl mt-8 leading-[0.95] tracking-tight"
         >
-          בר אברג׳יל
+          {heroTitle}
           <span className="block text-base sm:text-lg lg:text-xl font-sans font-normal tracking-[0.35em] text-muted-foreground uppercase mt-5">
             HAIR DESIGN · EILAT
           </span>
@@ -125,7 +162,7 @@ export default function LandingPage() {
           transition={{ delay: 0.35, duration: 0.5 }}
           className="text-lg sm:text-xl text-foreground/80 mt-8 max-w-md font-medium"
         >
-          תספורת · עיצוב · סטייל
+          {heroSubtitle}
         </motion.p>
 
         <motion.p
@@ -165,18 +202,57 @@ export default function LandingPage() {
         >
           <div className="flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-primary/70" />
-            ראשון–חמישי 10:00–20:00 · שישי–שבת סגור
+            {hours}
           </div>
-          <a href="tel:+972500000001" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+          <a href={`tel:${phone.replace(/[^0-9+]/g, '')}`} className="flex items-center gap-1.5 hover:text-primary transition-colors">
             <Phone className="w-4 h-4 text-primary/70" />
-            050-000-0001
+            {phone}
           </a>
-          <a href="https://maps.google.com/?q=בניין+העיגולים+אילת" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+          <a href={`https://maps.google.com/?q=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-primary transition-colors">
             <MapPin className="w-4 h-4 text-primary/70" />
-            בניין העיגולים, אילת
+            {address}
           </a>
         </motion.div>
       </main>
+
+      {/* Services section */}
+      {services.filter((s) => s.active).length > 0 && (
+        <section className="relative z-10 px-6 lg:px-12 py-16 lg:py-20">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="font-display font-black text-3xl sm:text-4xl mb-2">השירותים שלנו</h2>
+              <p className="text-muted-foreground">בחר את השירות והזמן תור</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services
+                .filter((s) => s.active)
+                .map((s, i) => (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-50px' }}
+                    transition={{ delay: i * 0.04, duration: 0.3 }}
+                  >
+                    <Card className="p-5 h-full flex flex-col">
+                      <h3 className="font-display font-bold text-lg mb-1">{s.name}</h3>
+                      {s.description && (
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{s.description}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-auto pt-3 border-t">
+                        <span className="text-xs text-muted-foreground tabular-nums">{s.durationMin} דק׳</span>
+                        <span className="font-bold tabular-nums">₪{Math.round(s.priceAgorot / 100)}</span>
+                      </div>
+                      <Button asChild variant="gold" size="sm" className="mt-3">
+                        <Link href={`/book?service=${s.id}`}>הזמן תור</Link>
+                      </Button>
+                    </Card>
+                  </motion.div>
+                ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Gallery section */}
       {gallery.length > 0 && (

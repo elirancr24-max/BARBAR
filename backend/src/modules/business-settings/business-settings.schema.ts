@@ -24,6 +24,15 @@ export const updateBusinessSettingsSchema = z
       .int()
       .refine((v) => [15, 20, 30].includes(v), 'Must be 15, 20 or 30')
       .optional(),
+    // Mini-site editable copy
+    businessPhone: z.string().max(40).nullable().optional(),
+    heroTitle: z.string().max(200).nullable().optional(),
+    heroSubtitle: z.string().max(300).nullable().optional(),
+    aboutStory: z.string().max(5000).nullable().optional(),
+    instagramUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
+    facebookUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
+    mapEmbedUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
+    businessHours: z.string().max(500).nullable().optional(),
   })
   .strict();
 

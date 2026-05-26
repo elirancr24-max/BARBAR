@@ -7,36 +7,28 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PhotoMark } from '@/components/brand/PhotoMark';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { useBusinessSettings } from '@/hooks/useBusinessSettings';
 
-interface TeamMember {
-  name: string;
-  role: string;
-  bio: string;
-  color: string;
-}
+const DEFAULT_STORY = `המספרה שלנו פתחה את שעריה באילת מתוך תשוקה אמיתית לעיצוב שיער ולחווית שירות יוצאת מן הכלל.
+כל לקוח מקבל יחס אישי, ייעוץ מקצועי, ועיצוב שיער המותאם בדיוק לסגנון ולפנים שלו.
 
-const team: TeamMember[] = [
-  {
-    name: 'בר אברג׳יל',
-    role: 'בעלים · ספר ראשי',
-    bio: 'מעל 10 שנות ניסיון בעיצוב שיער. מתמחה בגזירות מודרניות וזקנים מעוצבים.',
-    color: '#C9A961',
-  },
-  {
-    name: 'ישי',
-    role: 'ספר בכיר',
-    bio: 'מומחה בפייד וגזירות קלאסיות. אוהב לקוחות שמחפשים סטייל נקי ומדויק.',
-    color: '#3B82F6',
-  },
-  {
-    name: 'עידן',
-    role: 'ספר',
-    bio: 'ספר צעיר ויצירתי עם עין לטרנדים. מומחה בעיצובים נועזים ושיער ארוך.',
-    color: '#10B981',
-  },
-];
+אנחנו עובדים רק עם מוצרים איכותיים, משקיעים בהשתלמויות מתמשכות, ושומרים על אווירה ידידותית ומקצועית במספרה.`;
+
+const DEFAULT_MAP_SRC =
+  'https://maps.google.com/maps?q=%D7%91%D7%A0%D7%99%D7%99%D7%9F%20%D7%94%D7%A2%D7%99%D7%92%D7%95%D7%9C%D7%99%D7%9D%20%D7%90%D7%99%D7%9C%D7%AA&t=&z=15&ie=UTF8&iwloc=&output=embed';
 
 export default function AboutPage() {
+  const { data: settings } = useBusinessSettings();
+
+  const businessName = settings?.businessName || 'בר אברג׳יל';
+  const story = settings?.aboutStory || DEFAULT_STORY;
+  const phone = settings?.businessPhone || '050-000-0001';
+  const address = settings?.businessAddress || 'בניין העיגולים, אילת';
+  const hours = settings?.businessHours || 'א׳–ה׳ 10:00–20:00';
+  const instagramUrl = settings?.instagramUrl || 'https://www.instagram.com/barabrgil/';
+  const facebookUrl = settings?.facebookUrl || 'https://www.facebook.com/BarAbargilHairDesign/';
+  const mapSrc = settings?.mapEmbedUrl || DEFAULT_MAP_SRC;
+
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background to-secondary/30 pb-20 lg:pb-10">
       {/* Header */}
@@ -44,7 +36,7 @@ export default function AboutPage() {
         <div className="container max-w-5xl flex items-center justify-between h-16 px-4">
           <Link href="/" className="flex items-center gap-2.5 group">
             <PhotoMark size="sm" />
-            <span className="font-display font-black text-lg group-hover:text-primary transition-colors">בר אברג׳יל</span>
+            <span className="font-display font-black text-lg group-hover:text-primary transition-colors">{businessName}</span>
           </Link>
           <ThemeToggle />
         </div>
@@ -64,10 +56,6 @@ export default function AboutPage() {
           <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl mb-4 tracking-tight">
             הסיפור שלנו
           </h1>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            בר אברג׳יל פתח את המספרה ב-2020 באילת. עם רקע של למעלה מ-10 שנים בעיצוב שיער,
-            הוא מספק שירות מקצועי לכל לקוח.
-          </p>
         </motion.section>
 
         {/* Story */}
@@ -81,21 +69,14 @@ export default function AboutPage() {
             <div className="prose prose-sm max-w-none dark:prose-invert">
               <h2 className="font-display font-bold text-2xl mb-4 flex items-center gap-2">
                 <Scissors className="w-6 h-6 text-primary" />
-                מ-2020 ועד היום
+                {businessName}
               </h2>
-              <p className="text-foreground/90 leading-relaxed mb-3">
-                המספרה שלנו פתחה את שעריה באילת מתוך תשוקה אמיתית לעיצוב שיער ולחווית שירות יוצאת מן הכלל.
-                כל לקוח מקבל יחס אישי, ייעוץ מקצועי, ועיצוב שיער המותאם בדיוק לסגנון ולפנים שלו.
-              </p>
-              <p className="text-foreground/90 leading-relaxed">
-                אנחנו עובדים רק עם מוצרים איכותיים, משקיעים בהשתלמויות מתמשכות, ושומרים על אווירה ידידותית
-                ומקצועית במספרה. בואו להכיר את הצוות שלנו ולחוות שירות שלא תשכחו.
-              </p>
+              <p className="text-foreground/90 leading-relaxed whitespace-pre-line">{story}</p>
             </div>
           </Card>
         </motion.section>
 
-        {/* Team */}
+        {/* Team — single barber */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,27 +84,16 @@ export default function AboutPage() {
           className="mb-12"
         >
           <h2 className="font-display font-bold text-3xl mb-6 text-center">הצוות שלנו</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {team.map((m, i) => (
-              <motion.div
-                key={m.name}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.05 }}
+          <div className="grid grid-cols-1 max-w-sm mx-auto">
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div
+                className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-white shadow-lg gold-gradient"
               >
-                <Card className="p-6 text-center h-full hover:shadow-lg transition-shadow">
-                  <div
-                    className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-white shadow-lg"
-                    style={{ background: m.color }}
-                  >
-                    {m.name.charAt(0)}
-                  </div>
-                  <h3 className="font-display font-bold text-xl mb-1">{m.name}</h3>
-                  <p className="text-xs uppercase tracking-wider text-primary mb-3">{m.role}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{m.bio}</p>
-                </Card>
-              </motion.div>
-            ))}
+                {businessName.charAt(0)}
+              </div>
+              <h3 className="font-display font-bold text-xl mb-1">{businessName}</h3>
+              <p className="text-xs uppercase tracking-wider text-primary mb-3">בעלים · ספר ראשי</p>
+            </Card>
           </div>
         </motion.section>
 
@@ -141,7 +111,7 @@ export default function AboutPage() {
           <Card className="overflow-hidden">
             <div className="aspect-video w-full bg-secondary/50 relative">
               <iframe
-                src="https://maps.google.com/maps?q=%D7%91%D7%A0%D7%99%D7%99%D7%9F%20%D7%94%D7%A2%D7%99%D7%92%D7%95%D7%9C%D7%99%D7%9D%20%D7%90%D7%99%D7%9C%D7%AA&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                src={mapSrc}
                 title="מפת המספרה"
                 className="w-full h-full border-0"
                 loading="lazy"
@@ -150,7 +120,7 @@ export default function AboutPage() {
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <a
-                href="https://maps.google.com/?q=בניין+העיגולים+אילת"
+                href={`https://maps.google.com/?q=${encodeURIComponent(address)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 hover:text-primary transition-colors group"
@@ -160,16 +130,16 @@ export default function AboutPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs text-muted-foreground">כתובת</div>
-                  <div className="text-sm font-medium truncate">בניין העיגולים, אילת</div>
+                  <div className="text-sm font-medium truncate">{address}</div>
                 </div>
               </a>
-              <a href="tel:+972500000001" className="flex items-center gap-3 hover:text-primary transition-colors group">
+              <a href={`tel:${phone.replace(/[^0-9+]/g, '')}`} className="flex items-center gap-3 hover:text-primary transition-colors group">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">טלפון</div>
-                  <div className="text-sm font-medium tabular-nums">050-000-0001</div>
+                  <div className="text-sm font-medium tabular-nums">{phone}</div>
                 </div>
               </a>
               <div className="flex items-center gap-3">
@@ -178,7 +148,7 @@ export default function AboutPage() {
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">שעות פתיחה</div>
-                  <div className="text-sm font-medium">א׳–ה׳ 10:00–20:00</div>
+                  <div className="text-sm font-medium">{hours}</div>
                 </div>
               </div>
             </div>
@@ -200,27 +170,31 @@ export default function AboutPage() {
         {/* Footer social */}
         <footer className="border-t pt-8 pb-4 text-center">
           <div className="flex justify-center gap-3 mb-4">
-            <a
-              href="https://www.instagram.com/barabrgil/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-11 h-11 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram className="w-5 h-5 text-muted-foreground" />
-            </a>
-            <a
-              href="https://www.facebook.com/BarAbargilHairDesign/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-11 h-11 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
-              aria-label="Facebook"
-            >
-              <Facebook className="w-5 h-5 text-muted-foreground" />
-            </a>
+            {instagramUrl && (
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-11 h-11 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5 text-muted-foreground" />
+              </a>
+            )}
+            {facebookUrl && (
+              <a
+                href={facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-11 h-11 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-5 h-5 text-muted-foreground" />
+              </a>
+            )}
           </div>
           <div className="text-xs text-muted-foreground">
-            © 2026 בר אברג׳יל · Hair Design ·{' '}
+            © 2026 {businessName} · Hair Design ·{' '}
             <Link href="/" className="hover:text-primary transition-colors">
               <ArrowRight className="w-3 h-3 inline ms-1" /> חזרה לבית
             </Link>

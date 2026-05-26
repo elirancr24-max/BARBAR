@@ -7,6 +7,23 @@ import { getSettings, updateSettings } from './business-settings.service';
 
 const router = Router();
 
+// Public mini-site read — NO AUTH. Returns whitelisted safe fields only.
+router.get('/public', async (_req, res) => {
+  const s = await getSettings();
+  res.json({
+    businessName: s.businessName,
+    businessAddress: s.businessAddress,
+    businessPhone: s.businessPhone,
+    heroTitle: s.heroTitle,
+    heroSubtitle: s.heroSubtitle,
+    aboutStory: s.aboutStory,
+    instagramUrl: s.instagramUrl,
+    facebookUrl: s.facebookUrl,
+    mapEmbedUrl: s.mapEmbedUrl,
+    businessHours: s.businessHours,
+  });
+});
+
 // Any authed user can read — needed by other modules (e.g. deposits, reminders, commissions)
 router.get('/', requireAuth, async (_req, res) => {
   const settings = await getSettings();
