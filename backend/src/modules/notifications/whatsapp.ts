@@ -63,7 +63,9 @@ export type TemplateKey =
   | 'change'
   | 'newBookingToBarber'
   | 'reviewRequest'
-  | 'slotAvailable';
+  | 'slotAvailable'
+  | 'birthdayGreeting'
+  | 'campaignReengage';
 
 export interface TmplCtx {
   customerName: string;
@@ -114,6 +116,16 @@ export const TEMPLATE_LABELS: Record<TemplateKey, { label: string; description: 
     description: 'נשלח ללקוח שברשימת המתנה כשמתפנה תור',
     toCustomer: true,
   },
+  birthdayGreeting: {
+    label: 'ברכת יום הולדת',
+    description: 'נשלח אוטומטית ביום ההולדת של הלקוח',
+    toCustomer: true,
+  },
+  campaignReengage: {
+    label: 'קמפיין החזרת לקוחות',
+    description: 'נשלח ידנית ללקוחות לא פעילים / VIP',
+    toCustomer: true,
+  },
 };
 
 // Built-in defaults — used when employee hasn't customized
@@ -132,6 +144,10 @@ export const defaultTemplates: Record<TemplateKey, string> = {
     'שלום {customerName} 🙏\nתודה שבחרת ב-{businessName}!\nנשמח אם תוכל לדרג את החוויה שלך עם {employeeName} (לוקח 10 שניות):\n\n{reviewLink}\n\nכל דירוג עוזר לנו להשתפר ❤️',
   slotAvailable:
     'שלום {customerName} 🎉\nהתפנה תור ב-{businessName}!\n\n📅 {dateTime}\n💈 {serviceName} עם {employeeName}\n\nלהזמנה מהירה: {bookingLink}\nרוצה? השב להודעה זו ונסגור עכשיו.',
+  birthdayGreeting:
+    'מזל טוב {customerName}! 🎂 מאחלים לך יום הולדת שמח מ{businessName}. הזמן תור החודש ותקבל הפתעה קטנה ✂️',
+  campaignReengage:
+    'היי {customerName}, מזמן לא נפגשנו 💈 רוצה לבוא לתספורת? אני כאן בשבילך — {businessName}',
 };
 
 function applyVars(template: string, ctx: TmplCtx): string {
@@ -185,4 +201,6 @@ export const templates: Record<TemplateKey, (ctx: TmplCtx) => string> = {
   newBookingToBarber: (c) => applyVars(defaultTemplates.newBookingToBarber, c),
   reviewRequest: (c) => applyVars(defaultTemplates.reviewRequest, c),
   slotAvailable: (c) => applyVars(defaultTemplates.slotAvailable, c),
+  birthdayGreeting: (c) => applyVars(defaultTemplates.birthdayGreeting, c),
+  campaignReengage: (c) => applyVars(defaultTemplates.campaignReengage, c),
 };
