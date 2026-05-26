@@ -1,0 +1,1 @@
+ALTER TABLE "BusinessSettings" ADD COLUMN "slotIntervalMin" INTEGER NOT NULL DEFAULT 30;

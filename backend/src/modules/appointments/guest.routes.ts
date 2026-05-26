@@ -8,6 +8,7 @@ import { createAppointment } from './appointments.service';
 import { writeAudit } from '../../middleware/audit';
 import { buildWhatsAppUrl, renderTemplate } from '../notifications/whatsapp';
 import { env } from '../../config/env';
+import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ const guestBookSchema = z.object({
   fullName: z.string().min(2, 'שם מלא נדרש'),
   phone: z.string().regex(/^[\d+\-\s]{9,15}$/, 'מספר טלפון לא תקין'),
   email: z.string().email().optional().or(z.literal('')),
-  employeeId: z.string(),
+  employeeId: z.string().optional(),
   serviceId: z.string(),
   startAt: z.coerce.date(),
   notes: z.string().optional(),
@@ -63,9 +64,11 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
     return res.status(500).json({ error: { code: 'INTERNAL', message: 'יצירת לקוח נכשלה' } });
   }
 
+  const employeeId = dto.employeeId ?? (await getPrimaryEmployeeId());
+
   const appointment = await createAppointment({
     customerUserId: user.id,
-    employeeId: dto.employeeId,
+    employeeId,
     serviceId: dto.serviceId,
     startAt: dto.startAt,
     notes: dto.notes,

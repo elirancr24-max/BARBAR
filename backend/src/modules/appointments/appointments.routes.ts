@@ -16,6 +16,7 @@ import { env } from '../../config/env';
 import { NotFound } from '../../lib/errors';
 import { assignReceiptNumber } from '../payments/receipt.service';
 import { cacheGet, cacheSet } from '../../lib/redis';
+import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
 
 const IDEMPOTENCY_TTL_SEC = 600;
 function idemKey(key: string, userId: string): string {
@@ -25,7 +26,7 @@ function idemKey(key: string, userId: string): string {
 const router = Router();
 
 const createSchema = z.object({
-  employeeId: z.string(),
+  employeeId: z.string().optional(),
   serviceId: z.string(),
   startAt: z.coerce.date(),
   notes: z.string().optional(),
@@ -74,9 +75,11 @@ router.post('/', requireAuth, validate(createSchema), async (req, res) => {
     }
   }
 
+  const employeeId = dto.employeeId ?? (await getPrimaryEmployeeId());
+
   const created = await createAppointment({
     customerUserId,
-    employeeId: dto.employeeId,
+    employeeId,
     serviceId: dto.serviceId,
     startAt: dto.startAt,
     notes: dto.notes,

@@ -9,10 +9,9 @@ async function main() {
 
   // --- Users ---
   const adminPwd = await bcrypt.hash('Admin1234!', 12);
-  const barberPwd = await bcrypt.hash('Barber1234!', 12);
   const customerPwd = await bcrypt.hash('Customer1234!', 12);
 
-  // Bar — owner & admin (his own salon)
+  // Bar — owner & admin (his own salon, the sole barber)
   const barUser = await prisma.user.upsert({
     where: { email: 'bar@barabargil.local' },
     update: { fullName: 'בר אברג׳יל', phone: '972500000001' },
@@ -22,32 +21,6 @@ async function main() {
       passwordHash: adminPwd,
       fullName: 'בר אברג׳יל',
       role: Role.ADMIN,
-    },
-  });
-
-  // Yishai
-  const yishaiUser = await prisma.user.upsert({
-    where: { email: 'yishai@barabargil.local' },
-    update: { fullName: 'ישי', phone: '972500000002' },
-    create: {
-      email: 'yishai@barabargil.local',
-      phone: '972500000002',
-      passwordHash: barberPwd,
-      fullName: 'ישי',
-      role: Role.BARBER,
-    },
-  });
-
-  // Idan
-  const idanUser = await prisma.user.upsert({
-    where: { email: 'idan@barabargil.local' },
-    update: { fullName: 'עידן', phone: '972500000003' },
-    create: {
-      email: 'idan@barabargil.local',
-      phone: '972500000003',
-      passwordHash: barberPwd,
-      fullName: 'עידן',
-      role: Role.BARBER,
     },
   });
 
@@ -65,7 +38,7 @@ async function main() {
   });
 
   // --- Employees ---
-  // Bar is also a barber (the main one + owner)
+  // Single barber: Bar (the owner)
   const bar = await prisma.employee.upsert({
     where: { userId: barUser.id },
     update: { bio: 'בעל המספרה · ספר ראשי', color: '#c9a961' },
@@ -73,26 +46,6 @@ async function main() {
       userId: barUser.id,
       bio: 'בעל המספרה · ספר ראשי',
       color: '#c9a961', // gold
-    },
-  });
-
-  const yishai = await prisma.employee.upsert({
-    where: { userId: yishaiUser.id },
-    update: { bio: 'ספר מקצועי', color: '#8b5cf6' },
-    create: {
-      userId: yishaiUser.id,
-      bio: 'ספר מקצועי',
-      color: '#8b5cf6', // purple
-    },
-  });
-
-  const idan = await prisma.employee.upsert({
-    where: { userId: idanUser.id },
-    update: { bio: 'ספר מקצועי', color: '#10b981' },
-    create: {
-      userId: idanUser.id,
-      bio: 'ספר מקצועי',
-      color: '#10b981', // emerald
     },
   });
 
@@ -119,38 +72,34 @@ async function main() {
       ? await prisma.service.update({ where: { id: existing.id }, data: svc })
       : await prisma.service.create({ data: svc });
 
-    // All 3 barbers provide every service
-    for (const emp of [bar, yishai, idan]) {
-      await prisma.servicesOnEmployees.upsert({
-        where: { serviceId_employeeId: { serviceId: service.id, employeeId: emp.id } },
-        update: {},
-        create: { serviceId: service.id, employeeId: emp.id },
-      });
-    }
+    // Sole barber provides every service
+    await prisma.servicesOnEmployees.upsert({
+      where: { serviceId_employeeId: { serviceId: service.id, employeeId: bar.id } },
+      update: {},
+      create: { serviceId: service.id, employeeId: bar.id },
+    });
   }
 
   // --- Working Hours — Sun-Thu 10:00-20:00, Fri-Sat CLOSED ---
   // dayOfWeek: 0=Sunday, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri (closed), 6=Sat (closed)
   const workdays = [0, 1, 2, 3, 4];
   for (const dow of workdays) {
-    for (const emp of [bar, yishai, idan]) {
-      await prisma.workingHour.upsert({
-        where: { employeeId_dayOfWeek: { employeeId: emp.id, dayOfWeek: dow } },
-        update: { startTime: '10:00', endTime: '20:00', breakStart: null, breakEnd: null },
-        create: {
-          employeeId: emp.id,
-          dayOfWeek: dow,
-          startTime: '10:00',
-          endTime: '20:00',
-        },
-      });
-    }
+    await prisma.workingHour.upsert({
+      where: { employeeId_dayOfWeek: { employeeId: bar.id, dayOfWeek: dow } },
+      update: { startTime: '10:00', endTime: '20:00', breakStart: null, breakEnd: null },
+      create: {
+        employeeId: bar.id,
+        dayOfWeek: dow,
+        startTime: '10:00',
+        endTime: '20:00',
+      },
+    });
   }
 
   // Remove any Friday/Saturday hours (if existed from old seed)
   await prisma.workingHour.deleteMany({
     where: {
-      employeeId: { in: [bar.id, yishai.id, idan.id] },
+      employeeId: bar.id,
       dayOfWeek: { in: [5, 6] },
     },
   });
@@ -175,8 +124,6 @@ async function main() {
 
   console.log('✅ Seed completed!');
   console.log('   Owner (Admin + Barber): bar@barabargil.local / Admin1234!');
-  console.log('   Barber:                 yishai@barabargil.local / Barber1234!');
-  console.log('   Barber:                 idan@barabargil.local / Barber1234!');
   console.log('   Customer (demo):        customer@barabargil.local / Customer1234!');
   console.log('   📍 בניין העיגולים, אילת — ראשון-חמישי 10:00-20:00');
 }
