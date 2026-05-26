@@ -14,6 +14,7 @@ import { buildWhatsAppUrl, renderTemplate, type TemplateKey } from '../notificat
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { NotFound } from '../../lib/errors';
+import { assignReceiptNumber } from '../payments/receipt.service';
 
 const router = Router();
 
@@ -284,8 +285,10 @@ router.post('/:id/pay', requireAuth, requireRole('ADMIN', 'BARBER'),
       });
     }
 
-    await auditFromReq(req, 'payment.register', 'Payment', payment.id, null, payment);
-    res.status(201).json(payment);
+    const receiptNumber = await assignReceiptNumber(payment.id);
+    const paymentWithReceipt = { ...payment, receiptNumber };
+    await auditFromReq(req, 'payment.register', 'Payment', payment.id, null, paymentWithReceipt);
+    res.status(201).json(paymentWithReceipt);
   });
 
 // Clone (rebook) existing appointment to new time

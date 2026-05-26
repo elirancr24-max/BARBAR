@@ -5,6 +5,7 @@ import { requireAuth } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
 import { getPaymentProvider } from './provider';
+import { assignReceiptNumber } from './receipt.service';
 import { NotFound } from '../../lib/errors';
 
 const router = Router();
@@ -47,6 +48,9 @@ router.post(
       },
     });
 
+    if (payment.status === 'PAID') {
+      await assignReceiptNumber(payment.id);
+    }
     await auditFromReq(req, 'payment.charge', 'Payment', payment.id, null, payment);
     res.json({ payment, redirectUrl: result.redirectUrl });
   },
@@ -63,6 +67,15 @@ router.post('/webhook', async (req, res) => {
       paidAt: status === 'success' ? new Date() : null,
     },
   });
+  if (status === 'success') {
+    const paid = await prisma.payment.findMany({
+      where: { providerRef, status: 'PAID' },
+      select: { id: true },
+    });
+    for (const p of paid) {
+      await assignReceiptNumber(p.id);
+    }
+  }
   res.json({ ok: true });
 });
 

@@ -224,8 +224,31 @@ model Payment {
   provider      String
   providerRef   String?
   paidAt        DateTime?
+  receiptNumber Int?      @unique // running number, assigned on PAID
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model BusinessSettings {
+  id                   String   @id @default("singleton")
+  businessName         String   @default("BarBar")
+  businessAddress      String?
+  businessTaxId        String?
+  taxStatus            String   @default("UNKNOWN")  // OSEK_MURSHE | OSEK_PATUR | UNKNOWN
+  vatRate              Int      @default(17)         // percent
+  // Deposits / no-show (used by Agent D)
+  requireDeposit       Boolean  @default(false)
+  depositAgorot        Int      @default(0)
+  depositMethod        String   @default("BIT_LINK") // BIT_LINK | TRANZILA | BOTH
+  bitPhone             String?
+  noShowThreshold      Int      @default(1)          // require deposit after N no-shows
+  // Auto reminders (used by Agent D)
+  autoReminder24h      Boolean  @default(true)
+  allowSelfCancel      Boolean  @default(true)
+  selfCancelCutoffHr   Int      @default(4)
+  // Commissions (used by Agent E)
+  defaultCommissionPct Int      @default(0)
+  updatedAt            DateTime @updatedAt
 }
 
 model NotificationLog {

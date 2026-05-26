@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { DollarSign, TrendingUp, Calendar, ChevronLeft } from 'lucide-react';
+import { DollarSign, TrendingUp, Calendar, ChevronLeft, FileSpreadsheet } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { api } from '@/lib/api';
@@ -42,6 +42,20 @@ export default function ReportsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold">דשבורד</div>
                   <div className="text-xs text-muted-foreground">סקירה חודשית · KPIs</div>
+                </div>
+                <ChevronLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/admin/reports/accountant">
+            <Card className="hover:shadow-lg hover:border-primary/40 transition-all cursor-pointer group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                  <FileSpreadsheet className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold">דוח רואה חשבון</div>
+                  <div className="text-xs text-muted-foreground">CSV חודשי · מע״מ · מספרי קבלה</div>
                 </div>
                 <ChevronLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
               </CardContent>

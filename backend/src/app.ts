@@ -25,6 +25,8 @@ import appointmentsRoutes from './modules/appointments/appointments.routes';
 import guestRoutes from './modules/appointments/guest.routes';
 import paymentsRoutes from './modules/payments/payments.routes';
 import reportsRoutes from './modules/reports/reports.routes';
+import accountantRoutes from './modules/reports/accountant.routes';
+import businessSettingsRoutes from './modules/business-settings/business-settings.routes';
 import auditRoutes from './modules/audit/audit.routes';
 import flagsRoutes from './modules/feature-flags/feature-flags.routes';
 import bookingsRoutes from './modules/bookings/bookings.routes';
@@ -86,7 +88,9 @@ export function createApp(): Application {
   api.use('/appointments', appointmentsRoutes);
   api.use('/guest-booking', guestRoutes);
   api.use('/payments', paymentsRoutes);
+  api.use('/reports/accountant', accountantRoutes);
   api.use('/reports', reportsRoutes);
+  api.use('/business-settings', businessSettingsRoutes);
   api.use('/audit-logs', auditRoutes);
   api.use('/feature-flags', flagsRoutes);
   api.use('/bookings', bookingsRoutes);
