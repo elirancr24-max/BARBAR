@@ -30,18 +30,30 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
  */
 router.post('/register', authLimiter, validate(registerSchema), async (req: Request, res: Response) => {
   const deviceInfo = req.get('user-agent') || undefined;
-  const tokens = await authService.register(req.body, deviceInfo);
-  setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+  const result = await authService.register(req.body, deviceInfo);
+  setAuthCookies(res, result.accessToken, result.refreshToken);
   await writeAudit({
-    actorId: tokens.user.id,
-    actorRole: tokens.user.role,
+    actorId: result.user.id,
+    actorRole: result.user.role,
     action: 'auth.register',
     entityType: 'User',
-    entityId: tokens.user.id,
+    entityId: result.user.id,
     ip: req.ip,
     userAgent: deviceInfo,
   });
-  res.status(201).json(tokens);
+  if (result.customerId) {
+    await writeAudit({
+      actorId: result.user.id,
+      actorRole: result.user.role,
+      action: 'privacy.consent.granted',
+      entityType: 'Customer',
+      entityId: result.customerId,
+      after: { termsAccepted: true, privacyAccepted: true, marketingConsent: result.marketingConsent },
+      ip: req.ip,
+      userAgent: deviceInfo,
+    });
+  }
+  res.status(201).json(result);
 });
 
 /**

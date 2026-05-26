@@ -5,6 +5,8 @@ export const registerSchema = z.object({
   phone: z.string().regex(/^[\d+\-\s]{9,15}$/, 'מספר טלפון לא תקין'),
   password: z.string().min(8, 'סיסמה חייבת לפחות 8 תווים'),
   fullName: z.string().min(2, 'שם מלא נדרש'),
+  termsAccepted: z.literal(true, { errorMap: () => ({ message: 'יש לאשר את תנאי השימוש ומדיניות הפרטיות' }) }),
+  marketingConsent: z.boolean().optional().default(false),
 });
 
 export const loginSchema = z.object({

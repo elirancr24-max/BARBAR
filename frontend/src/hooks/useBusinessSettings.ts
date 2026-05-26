@@ -14,6 +14,9 @@ export interface PublicBusinessSettings {
   facebookUrl: string | null;
   mapEmbedUrl: string | null;
   businessHours: string | null;
+  businessTaxId?: string | null;
+  privacyPolicyText?: string | null;
+  termsOfServiceText?: string | null;
 }
 
 // Uses the PUBLIC endpoint, works for unauthed visitors.

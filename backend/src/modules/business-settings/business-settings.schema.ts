@@ -33,6 +33,9 @@ export const updateBusinessSettingsSchema = z
     facebookUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
     mapEmbedUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
     businessHours: z.string().max(500).nullable().optional(),
+    // Amendment 13 — legal text
+    privacyPolicyText: z.string().max(20000).nullable().optional(),
+    termsOfServiceText: z.string().max(20000).nullable().optional(),
   })
   .strict();
 

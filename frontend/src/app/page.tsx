@@ -364,6 +364,10 @@ export default function LandingPage() {
           <Link href="/book" className="hover:text-primary transition-colors">קבע תור</Link>
           <span aria-hidden>·</span>
           <Link href="/my-bookings" className="hover:text-primary transition-colors">התורים שלי</Link>
+          <span aria-hidden>·</span>
+          <Link href="/privacy" className="hover:text-primary transition-colors">מדיניות פרטיות</Link>
+          <span aria-hidden>·</span>
+          <Link href="/terms" className="hover:text-primary transition-colors">תנאי שימוש</Link>
         </div>
         <div>
           © 2026 בר אברג׳יל · Hair Design

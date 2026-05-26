@@ -47,6 +47,8 @@ export default function BookPage() {
   const [lockId, setLockId] = useState<string | null>(null);
   const [ownerId, setOwnerId] = useState<string>('');
   const [contact, setContact] = useState({ fullName: '', phone: '', email: '', notes: '' });
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [result, setResult] = useState<BookingResult | null>(null);
 
   useEffect(() => { setOwnerId(getGuestId()); }, []);
@@ -96,6 +98,8 @@ export default function BookPage() {
         serviceId,
         startAt: slot!.start,
         notes: contact.notes || undefined,
+        termsAccepted: true,
+        marketingConsent,
       });
       return data;
     },
@@ -367,6 +371,38 @@ export default function BookPage() {
                       placeholder="משהו שכדאי לדעת?"
                     />
                   </div>
+
+                  {/* Amendment 13 — consent checkboxes */}
+                  <div className="space-y-2 pt-2 border-t">
+                    <label className="flex items-start gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 shrink-0 accent-primary"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        required
+                        aria-required="true"
+                      />
+                      <span>
+                        אני מאשר/ת את{' '}
+                        <Link href="/terms" target="_blank" className="text-primary hover:underline">תנאי השימוש</Link>
+                        {' '}ואת{' '}
+                        <Link href="/privacy" target="_blank" className="text-primary hover:underline">מדיניות הפרטיות</Link>
+                        <span className="text-rose-500"> *</span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 shrink-0 accent-primary"
+                        checked={marketingConsent}
+                        onChange={(e) => setMarketingConsent(e.target.checked)}
+                      />
+                      <span className="text-muted-foreground">
+                        אני מעוניין/ת לקבל הודעות שיווקיות ב-WhatsApp
+                      </span>
+                    </label>
+                  </div>
                 </Card>
 
                 {/* Summary */}
@@ -393,7 +429,7 @@ export default function BookPage() {
                   size="lg"
                   className="flex-1"
                   onClick={() => bookMutation.mutate()}
-                  disabled={bookMutation.isPending || !contact.fullName || !contact.phone}
+                  disabled={bookMutation.isPending || !contact.fullName || !contact.phone || !termsAccepted}
                 >
                   {bookMutation.isPending ? 'מאשר...' : 'אשר וקבע תור'}
                 </Button>
