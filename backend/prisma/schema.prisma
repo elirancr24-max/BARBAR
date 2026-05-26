@@ -118,6 +118,12 @@ model Customer {
   loyaltyPoints  Int      @default(0)   // 10 points = free haircut
   noShowCount    Int      @default(0)
   lastNoShowAt   DateTime?
+  marketingConsent          Boolean   @default(false)
+  marketingConsentAt        DateTime?
+  marketingConsentRevokedAt DateTime?
+  dataExportRequestedAt     DateTime?
+  dataDeletionRequestedAt   DateTime?
+  dataDeletionApprovedAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
