@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
 import { api, clearTokens } from '@/lib/api';
 import { disconnectSocket } from '@/lib/socket';
-import { adminNav, barberNav, customerNav, type NavItem } from './navItems';
+import { adminNav, customerNav, type NavItem } from './navItems';
 
 interface Props {
   role: 'ADMIN' | 'BARBER' | 'CUSTOMER';
@@ -25,17 +25,8 @@ export function MobileNav({ role, title }: Props) {
   const clear = useAuth((s) => s.clear);
   const user = useAuth((s) => s.user);
   let nav: NavItem[];
-  if (role === 'ADMIN') {
-    nav = user?.employee
-      ? [
-          ...adminNav,
-          { href: '/barber/calendar', label: 'היומן שלי', icon: barberNav[0].icon },
-          { href: '/barber/availability', label: 'שעות זמינות', icon: barberNav[1].icon },
-          { href: '/barber/messages', label: 'הודעות מוכנות', icon: barberNav[barberNav.length - 1].icon },
-        ]
-      : adminNav;
-  } else if (role === 'BARBER') {
-    nav = barberNav;
+  if (role === 'ADMIN' || role === 'BARBER') {
+    nav = adminNav;
   } else {
     nav = customerNav;
   }

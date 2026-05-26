@@ -9,7 +9,7 @@ import { disconnectSocket } from '@/lib/socket';
 import { useAuth } from '@/store/auth';
 import { Button } from '@/components/ui/button';
 import { PhotoMark } from '@/components/brand/PhotoMark';
-import { adminNav, barberNav, customerNav, type NavItem } from './navItems';
+import { adminNav, customerNav, type NavItem } from './navItems';
 
 export function Sidebar({ role }: { role: 'ADMIN' | 'BARBER' | 'CUSTOMER' }) {
   const pathname = usePathname();
@@ -17,19 +17,9 @@ export function Sidebar({ role }: { role: 'ADMIN' | 'BARBER' | 'CUSTOMER' }) {
   const clear = useAuth((s) => s.clear);
   const user = useAuth((s) => s.user);
 
-  // If admin is ALSO a barber (owner-barber like Bar), append a personal-barber section
   let nav: NavItem[];
-  if (role === 'ADMIN') {
-    nav = user?.employee
-      ? [
-          ...adminNav,
-          { href: '/barber/calendar', label: 'היומן שלי', icon: barberNav[0].icon },
-          { href: '/barber/availability', label: 'שעות זמינות', icon: barberNav[1].icon },
-          { href: '/barber/messages', label: 'הודעות מוכנות', icon: barberNav[barberNav.length - 1].icon },
-        ]
-      : adminNav;
-  } else if (role === 'BARBER') {
-    nav = barberNav;
+  if (role === 'ADMIN' || role === 'BARBER') {
+    nav = adminNav;
   } else {
     nav = customerNav;
   }

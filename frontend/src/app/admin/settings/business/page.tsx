@@ -28,6 +28,7 @@ interface BusinessSettings {
   allowSelfCancel: boolean;
   selfCancelCutoffHr: number;
   defaultCommissionPct: number;
+  slotIntervalMin: number;
 }
 
 type FormValues = Omit<BusinessSettings, 'id'>;
@@ -58,6 +59,7 @@ export default function BusinessSettingsPage() {
         allowSelfCancel: data.allowSelfCancel,
         selfCancelCutoffHr: data.selfCancelCutoffHr,
         defaultCommissionPct: data.defaultCommissionPct,
+        slotIntervalMin: data.slotIntervalMin ?? 30,
       });
     }
   }, [data, reset]);
@@ -79,6 +81,7 @@ export default function BusinessSettingsPage() {
         allowSelfCancel: !!values.allowSelfCancel,
         selfCancelCutoffHr: Number(values.selfCancelCutoffHr),
         defaultCommissionPct: Number(values.defaultCommissionPct),
+        slotIntervalMin: Number(values.slotIntervalMin),
       };
       return (await api.put<BusinessSettings>('/business-settings', payload)).data;
     },
@@ -101,6 +104,7 @@ export default function BusinessSettingsPage() {
   }
 
   const requireDeposit = watch('requireDeposit');
+  const slotIntervalMin = watch('slotIntervalMin');
 
   return (
     <>
@@ -109,6 +113,39 @@ export default function BusinessSettingsPage() {
         onSubmit={handleSubmit((v) => mutation.mutate(v))}
         className="p-4 lg:p-6 space-y-6 max-w-3xl"
       >
+        {/* Slot interval */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">מרווח תורים בלוח</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              קובע את הצעדים שבהם מוצגים סלוטים פנויים בלוח ובדף ההזמנה.
+            </p>
+            <div className="grid grid-cols-3 gap-3 max-w-md">
+              {[15, 20, 30].map((n) => {
+                const active = slotIntervalMin === n;
+                return (
+                  <label
+                    key={n}
+                    className={`flex items-center justify-center h-12 rounded-md border cursor-pointer text-sm font-medium ${
+                      active ? 'border-primary bg-primary/10 text-primary' : 'border-input'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      value={n}
+                      {...register('slotIntervalMin', { valueAsNumber: true })}
+                      className="sr-only"
+                    />
+                    {n} דקות
+                  </label>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Business details */}
         <Card>
           <CardHeader>

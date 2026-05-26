@@ -1,4 +1,4 @@
-import { Scissors, LayoutDashboard, Calendar, Users, UserCog, BarChart3, Flag, ScrollText, Settings, Clock, CalendarX, MessageSquare } from 'lucide-react';
+import { Scissors, LayoutDashboard, Calendar, Users, BarChart3, Settings, CalendarX, UserCircle2 } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -9,22 +9,12 @@ export interface NavItem {
 export const adminNav: NavItem[] = [
   { href: '/admin/dashboard', label: 'דשבורד', icon: LayoutDashboard },
   { href: '/admin/calendar', label: 'יומן', icon: Calendar },
-  { href: '/admin/employees', label: 'ספרים', icon: UserCog },
   { href: '/admin/services', label: 'שירותים', icon: Scissors },
   { href: '/admin/customers', label: 'לקוחות', icon: Users },
   { href: '/admin/time-off', label: 'חופשות', icon: CalendarX },
   { href: '/admin/reports', label: 'דוחות', icon: BarChart3 },
-  { href: '/admin/audit-logs', label: 'לוגים', icon: ScrollText },
-  { href: '/admin/settings/flags', label: 'Feature Flags', icon: Flag },
+  { href: '/admin/profile', label: 'הפרופיל שלי', icon: UserCircle2 },
   { href: '/admin/settings', label: 'הגדרות', icon: Settings },
-];
-
-export const barberNav: NavItem[] = [
-  { href: '/barber/calendar', label: 'היומן שלי', icon: Calendar },
-  { href: '/barber/availability', label: 'שעות זמינות', icon: Clock },
-  { href: '/barber/time-off', label: 'חופשות', icon: CalendarX },
-  { href: '/barber/customers', label: 'לקוחות', icon: Users },
-  { href: '/barber/messages', label: 'הודעות מוכנות', icon: MessageSquare },
 ];
 
 export const customerNav: NavItem[] = [

@@ -3,15 +3,13 @@
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Flag, ScrollText, UserCog, Building2, FileSpreadsheet } from 'lucide-react';
+import { Building2, UserCircle2, FileSpreadsheet } from 'lucide-react';
 
 export default function AdminSettings() {
   const items = [
-    { href: '/admin/settings/business', icon: Building2, label: 'הגדרות עסק', desc: 'פרטי העסק, פיקדונות, תזכורות ועמלות' },
+    { href: '/admin/settings/business', icon: Building2, label: 'הגדרות עסק', desc: 'מרווח תורים, פיקדונות, עמלות ועוד' },
+    { href: '/admin/profile', icon: UserCircle2, label: 'הפרופיל שלי', desc: 'פרטים אישיים, שעות, חופשות, הודעות' },
     { href: '/admin/reports/accountant', icon: FileSpreadsheet, label: 'דוח רואה חשבון', desc: 'דוח תשלומים חודשי לרו״ח' },
-    { href: '/admin/settings/flags', icon: Flag, label: 'Feature Flags', desc: 'הפעלה/כיבוי פיצ\'רים' },
-    { href: '/admin/audit-logs', icon: ScrollText, label: 'לוגי פעילות', desc: 'היסטוריית פעולות במערכת' },
-    { href: '/admin/employees', icon: UserCog, label: 'עובדים', desc: 'ניהול ספרים' },
   ];
 
   return (
