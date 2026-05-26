@@ -18,6 +18,8 @@ export async function register(dto: RegisterDto, deviceInfo?: string) {
   if (existing) throw BadRequest('משתמש עם אימייל או טלפון זה כבר קיים');
 
   const passwordHash = await bcrypt.hash(dto.password, 12);
+  const now = new Date();
+  const marketingConsent = !!dto.marketingConsent;
   const user = await prisma.user.create({
     data: {
       email: dto.email,
@@ -25,11 +27,19 @@ export async function register(dto: RegisterDto, deviceInfo?: string) {
       fullName: dto.fullName,
       passwordHash,
       role: 'CUSTOMER',
-      customer: { create: {} },
+      customer: {
+        create: {
+          termsAcceptedAt: now,
+          privacyAcceptedAt: now,
+          marketingConsent,
+          marketingConsentAt: marketingConsent ? now : null,
+        },
+      },
     },
+    include: { customer: true },
   });
 
-  return issueTokens(user.id, user.email, user.role, deviceInfo);
+  return { ...(await issueTokens(user.id, user.email, user.role, deviceInfo)), customerId: user.customer?.id, marketingConsent };
 }
 
 export async function login(dto: LoginDto, deviceInfo?: string) {

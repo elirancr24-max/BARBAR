@@ -118,6 +118,14 @@ model Customer {
   loyaltyPoints  Int      @default(0)   // 10 points = free haircut
   noShowCount    Int      @default(0)
   lastNoShowAt   DateTime?
+  // Amendment 13 (תיקון 13) consent + DSR tracking
+  marketingConsent           Boolean   @default(false)
+  marketingConsentAt         DateTime?
+  termsAcceptedAt            DateTime?
+  privacyAcceptedAt          DateTime?
+  dataExportRequestedAt      DateTime?
+  dataDeletionRequestedAt    DateTime?
+  dataDeletionApprovedAt     DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -272,6 +280,9 @@ model BusinessSettings {
   facebookUrl          String?
   mapEmbedUrl          String?
   businessHours        String?
+  // Amendment 13 — legal text rendered by /privacy and /terms pages
+  privacyPolicyText    String?
+  termsOfServiceText   String?
   updatedAt            DateTime @updatedAt
 }
 

@@ -168,6 +168,35 @@ router.patch(
   },
 );
 
+// PATCH /customers/:id/marketing-consent — admin toggles marketing consent (Amendment 13)
+router.patch(
+  '/:id/marketing-consent',
+  requireAuth,
+  requireRole('ADMIN'),
+  validate(z.object({ consent: z.boolean() })),
+  async (req, res, next) => {
+    const before = await prisma.customer.findUnique({ where: { id: req.params.id } });
+    if (!before) return next(NotFound('לקוח לא נמצא'));
+    const consent = (req.body as { consent: boolean }).consent;
+    const updated = await prisma.customer.update({
+      where: { id: req.params.id },
+      data: {
+        marketingConsent: consent,
+        marketingConsentAt: new Date(),
+      },
+    });
+    await auditFromReq(
+      req,
+      consent ? 'privacy.marketing.granted' : 'privacy.marketing.revoked',
+      'Customer',
+      updated.id,
+      { marketingConsent: before.marketingConsent, marketingConsentAt: before.marketingConsentAt },
+      { marketingConsent: updated.marketingConsent, marketingConsentAt: updated.marketingConsentAt },
+    );
+    res.json(updated);
+  },
+);
+
 // POST /customers/:id/reset-no-show — admin resets a customer's no-show counter to 0
 router.post('/:id/reset-no-show', requireAuth, requireRole('ADMIN'), async (req, res, next) => {
   const before = await prisma.customer.findUnique({ where: { id: req.params.id } });

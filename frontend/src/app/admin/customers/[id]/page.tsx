@@ -34,6 +34,10 @@ interface Customer {
   loyaltyPoints: number;
   noShowCount?: number;
   lastNoShowAt?: string | null;
+  marketingConsent?: boolean;
+  marketingConsentAt?: string | null;
+  termsAcceptedAt?: string | null;
+  privacyAcceptedAt?: string | null;
   user: { id: string; fullName: string; email: string; phone: string; createdAt: string; birthday?: string | null };
 }
 
@@ -114,6 +118,19 @@ export default function CustomerDetailPage({ params }: Props) {
     mutationFn: async () => (await api.post(`/customers/${id}/reset-no-show`)).data,
     onSuccess: () => {
       toast.success('סטטוס no-show אופס');
+      qc.invalidateQueries({ queryKey: ['customer', id] });
+    },
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { error?: { message?: string } } } };
+      toast.error(err.response?.data?.error?.message || 'שגיאה');
+    },
+  });
+
+  const marketingConsentMut = useMutation({
+    mutationFn: async (consent: boolean) =>
+      (await api.patch(`/customers/${id}/marketing-consent`, { consent })).data,
+    onSuccess: () => {
+      toast.success('הסכמת השיווק עודכנה');
       qc.invalidateQueries({ queryKey: ['customer', id] });
     },
     onError: (e: unknown) => {
@@ -430,6 +447,61 @@ export default function CustomerDetailPage({ params }: Props) {
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> {customer.user.email}</div>
                   <div className="flex items-center gap-1.5"><CalIcon className="w-3.5 h-3.5" /> רשום מאז {new Date(customer.user.createdAt).toLocaleDateString('he-IL')}</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Privacy & consents (Amendment 13) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">פרטיות והסכמות</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="text-muted-foreground text-xs">תנאי שימוש</div>
+                    <div className="font-medium">
+                      {customer.termsAcceptedAt
+                        ? new Date(customer.termsAcceptedAt).toLocaleString('he-IL')
+                        : 'לא אושר'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">מדיניות פרטיות</div>
+                    <div className="font-medium">
+                      {customer.privacyAcceptedAt
+                        ? new Date(customer.privacyAcceptedAt).toLocaleString('he-IL')
+                        : 'לא אושר'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-3 pt-3 border-t">
+                  <div>
+                    <div className="font-medium">הסכמה לשיווק (WhatsApp)</div>
+                    <div className="text-xs text-muted-foreground">
+                      {customer.marketingConsentAt
+                        ? `עודכן לאחרונה: ${new Date(customer.marketingConsentAt).toLocaleString('he-IL')}`
+                        : 'מעולם לא עודכן'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={!!customer.marketingConsent}
+                    disabled={marketingConsentMut.isPending}
+                    onClick={() => marketingConsentMut.mutate(!customer.marketingConsent)}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                      customer.marketingConsent ? 'bg-primary' : 'bg-muted',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                        customer.marketingConsent ? 'translate-x-1' : 'translate-x-6',
+                      )}
+                    />
+                  </button>
                 </div>
               </CardContent>
             </Card>

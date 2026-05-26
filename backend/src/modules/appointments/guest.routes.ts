@@ -20,6 +20,8 @@ const guestBookSchema = z.object({
   serviceId: z.string(),
   startAt: z.coerce.date(),
   notes: z.string().optional(),
+  termsAccepted: z.literal(true, { errorMap: () => ({ message: 'יש לאשר את תנאי השימוש ומדיניות הפרטיות' }) }),
+  marketingConsent: z.boolean().optional().default(false),
 });
 
 function normalizePhone(p: string): string {
@@ -42,6 +44,7 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
   }
   if (!user) {
     const randomPwd = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
+    const now = new Date();
     user = await prisma.user.create({
       data: {
         email,
@@ -49,10 +52,30 @@ router.post('/', validate(guestBookSchema), async (req, res) => {
         fullName: dto.fullName,
         passwordHash: randomPwd,
         role: 'CUSTOMER',
-        customer: { create: { notes: 'הזמנה כאורח' } },
+        customer: {
+          create: {
+            notes: 'הזמנה כאורח',
+            termsAcceptedAt: now,
+            privacyAcceptedAt: now,
+            marketingConsent: !!dto.marketingConsent,
+            marketingConsentAt: dto.marketingConsent ? now : null,
+          },
+        },
       },
       include: { customer: true },
     });
+    if (user.customer) {
+      await writeAudit({
+        actorId: user.id,
+        actorRole: 'CUSTOMER',
+        action: 'privacy.consent.granted',
+        entityType: 'Customer',
+        entityId: user.customer.id,
+        after: { termsAccepted: true, privacyAccepted: true, marketingConsent: !!dto.marketingConsent },
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+    }
   } else if (user.fullName !== dto.fullName) {
     user = await prisma.user.update({
       where: { id: user.id },
