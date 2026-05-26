@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Calendar, DollarSign, XCircle, TrendingUp, ArrowUp, ArrowDown, Phone, Crown } from 'lucide-react';
+import { Calendar, DollarSign, Users, XCircle, TrendingUp, Cake, ArrowUp, ArrowDown, Phone, Crown } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -51,6 +51,11 @@ export default function AdminDashboardPage() {
     queryKey: ['busy-hours'],
     queryFn: async () => (await api.get<{ buckets: { hour: number; count: number }[] }>('/reports/busy-hours')).data,
   });
+  const { data: birthdayToday } = useQuery({
+    queryKey: ['birthday-today'],
+    queryFn: async () => (await api.get<{ count: number; customers: { id: string; fullName: string }[] }>('/marketing/birthday-today')).data,
+    staleTime: 5 * 60_000,
+  });
 
   const kpis = [
     { label: 'תורים היום', value: data?.todayAppointments ?? 0, icon: Calendar, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -98,6 +103,25 @@ export default function AdminDashboardPage() {
           </Card>
         ) : (
           <NextAppointment />
+        )}
+
+        {birthdayToday && birthdayToday.count > 0 && (
+          <Link href="/admin/marketing">
+            <Card className="hover:shadow-md transition-shadow border-pink-500/30 bg-pink-500/5 cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-pink-500/15 text-pink-600 flex items-center justify-center">
+                  <Cake className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold">🎂 ימי הולדת היום: {birthdayToday.count}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {birthdayToday.customers.slice(0, 3).map((c) => c.fullName).join(' · ')}
+                  </div>
+                </div>
+                <div className="text-xs text-pink-600">שלח ברכה ←</div>
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
         {/* KPIs */}

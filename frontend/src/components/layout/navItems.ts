@@ -1,4 +1,4 @@
-import { Scissors, LayoutDashboard, Calendar, Users, BarChart3, Settings, CalendarX, UserCircle2 } from 'lucide-react';
+import { Scissors, LayoutDashboard, Calendar, Users, BarChart3, Settings, CalendarX, UserCircle2, Megaphone } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -13,6 +13,7 @@ export const adminNav: NavItem[] = [
   { href: '/admin/customers', label: 'לקוחות', icon: Users },
   { href: '/admin/time-off', label: 'חופשות', icon: CalendarX },
   { href: '/admin/reports', label: 'דוחות', icon: BarChart3 },
+  { href: '/admin/marketing', label: 'שיווק', icon: Megaphone },
   { href: '/admin/profile', label: 'הפרופיל שלי', icon: UserCircle2 },
   { href: '/admin/settings', label: 'הגדרות', icon: Settings },
 ];

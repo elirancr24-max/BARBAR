@@ -34,6 +34,7 @@ import reviewsRoutes from './modules/reviews/reviews.routes';
 import waitlistRoutes from './modules/waitlist/waitlist.routes';
 import photosRoutes from './modules/photos/photos.routes';
 import pushRoutes from './modules/push/push.routes';
+import marketingRoutes from './modules/marketing/marketing.routes';
 
 export function createApp(): Application {
   const app = express();
@@ -97,6 +98,7 @@ export function createApp(): Application {
   api.use('/reviews', reviewsRoutes);
   api.use('/waitlist', waitlistRoutes);
   api.use('/push', pushRoutes);
+  api.use('/marketing', marketingRoutes);
   api.use('/', photosRoutes);
   app.use(env.API_PREFIX, api);
 

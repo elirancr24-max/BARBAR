@@ -8,6 +8,7 @@ import { redis } from './lib/redis';
 import { prisma } from './lib/prisma';
 import { startReminderJob } from './lib/reminders';
 import { startNoShowCron } from './lib/noShowCron';
+import { startBirthdayCron } from './lib/birthdayCron';
 
 async function start() {
   const app = createApp();
@@ -22,6 +23,7 @@ async function start() {
     logger.info(`📚 Swagger UI: http://localhost:${env.PORT}/docs`);
     startReminderJob();
     startNoShowCron();
+    startBirthdayCron();
   });
 
   const shutdown = async (signal: string) => {
