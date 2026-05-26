@@ -6,7 +6,7 @@ import { getAvailableSlots } from './availability.service';
 const router = Router();
 
 const querySchema = z.object({
-  employeeId: z.string(),
+  employeeId: z.string().optional(),
   date: z.coerce.date(),
   serviceId: z.string(),
 });

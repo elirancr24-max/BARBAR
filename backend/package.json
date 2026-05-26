@@ -17,6 +17,7 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:reset": "prisma migrate reset --force",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:cleanup-extras": "tsx scripts/single-barber-cleanup.ts",
     "prisma:seed:holidays": "tsx prisma/seed-holidays.ts",
     "prisma:studio": "prisma studio"
   },

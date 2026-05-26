@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
 import { Forbidden, NotFound } from '../../lib/errors';
+import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
 
 const router = Router();
 
@@ -28,7 +29,9 @@ router.get('/', async (req, res) => {
 });
 
 router.put('/:employeeId', requireAuth, validate(bulkSchema), async (req, res, next) => {
-  const { employeeId } = req.params;
+  // Accept literal 'me' to mean the primary (sole) employee
+  const employeeId =
+    req.params.employeeId === 'me' ? await getPrimaryEmployeeId() : req.params.employeeId;
   const emp = await prisma.employee.findUnique({ where: { id: employeeId } });
   if (!emp) return next(NotFound('עובד לא נמצא'));
 

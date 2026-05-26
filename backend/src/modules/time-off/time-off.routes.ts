@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
 import { Forbidden, NotFound } from '../../lib/errors';
+import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
 
 const router = Router();
 
@@ -31,6 +32,10 @@ router.get('/', async (req, res) => {
 
 router.post('/', requireAuth, validate(timeOffSchema), async (req, res, next) => {
   const dto = req.body as z.infer<typeof timeOffSchema>;
+  // Fall back to primary employee when employeeId omitted (and not global)
+  if (!dto.employeeId && !dto.isGlobal) {
+    dto.employeeId = await getPrimaryEmployeeId();
+  }
   // BARBER: only self, non-global
   if (req.user!.role === 'BARBER') {
     if (dto.isGlobal) return next(Forbidden('רק מנהל יכול לחסום ימים גלובלית'));

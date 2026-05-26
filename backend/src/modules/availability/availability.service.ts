@@ -1,7 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import { cacheGet, cacheSet } from '../../lib/redis';
-
-const SLOT_STEP_MIN = 15;
+import { getPrimaryEmployeeId } from '../../lib/singleEmployee';
 
 interface Slot {
   start: string; // ISO
@@ -26,16 +25,23 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
 
 /**
  * Compute available slots for an employee on a given date for a given service.
+ *
+ * `employeeId` is optional — when omitted, falls back to the primary (sole) employee.
  */
 export async function getAvailableSlots(params: {
-  employeeId: string;
+  employeeId?: string;
   date: Date; // any time on the target day (we normalize)
   serviceId: string;
 }): Promise<Slot[]> {
-  const { employeeId, serviceId } = params;
+  const employeeId = params.employeeId ?? (await getPrimaryEmployeeId());
+  const { serviceId } = params;
   const date = new Date(params.date);
   date.setHours(0, 0, 0, 0);
   const dayOfWeek = date.getDay();
+
+  // Load slot step from business settings (15 | 20 | 30, default 30)
+  const settings = await prisma.businessSettings.findUnique({ where: { id: 'singleton' } });
+  const slotStep = settings?.slotIntervalMin ?? 30;
 
   const cacheKey = `avail:${employeeId}:${date.toISOString().slice(0, 10)}:${serviceId}`;
   const cached = await cacheGet<Slot[]>(cacheKey);
@@ -74,7 +80,7 @@ export async function getAvailableSlots(params: {
   const slots: Slot[] = [];
   const now = new Date();
 
-  for (let m = start; m + service.durationMin <= end; m += SLOT_STEP_MIN) {
+  for (let m = start; m + service.durationMin <= end; m += slotStep) {
     if (brkStart !== null && brkEnd !== null && m < brkEnd && m + service.durationMin > brkStart) continue;
 
     const slotStart = dateAtMinutes(date, m);

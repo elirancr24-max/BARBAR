@@ -258,6 +258,8 @@ model BusinessSettings {
   selfCancelCutoffHr   Int      @default(4)
   // Commissions (used by Agent E)
   defaultCommissionPct Int      @default(0)
+  // Availability slot interval (15 | 20 | 30, used by Agent F)
+  slotIntervalMin      Int      @default(30)
   updatedAt            DateTime @updatedAt
 }
 

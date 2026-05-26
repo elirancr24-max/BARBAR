@@ -19,6 +19,11 @@ export const updateBusinessSettingsSchema = z
     allowSelfCancel: z.boolean().optional(),
     selfCancelCutoffHr: z.number().int().min(0).max(168).optional(),
     defaultCommissionPct: z.number().int().min(0).max(100).optional(),
+    slotIntervalMin: z
+      .number()
+      .int()
+      .refine((v) => [15, 20, 30].includes(v), 'Must be 15, 20 or 30')
+      .optional(),
   })
   .strict();
 
