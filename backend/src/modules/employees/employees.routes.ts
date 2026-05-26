@@ -127,6 +127,7 @@ const updateEmployeeSchema = z.object({
   bio: z.string().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   active: z.boolean().optional(),
+  commissionPct: z.number().int().min(0).max(100).nullable().optional(),
 });
 
 router.get('/', async (_req, res) => {
@@ -177,7 +178,7 @@ router.post('/', requireAuth, requireRole('ADMIN'), validate(createEmployeeSchem
   res.status(201).json(user);
 });
 
-router.patch('/:id', requireAuth, requireRole('ADMIN'), validate(updateEmployeeSchema), async (req, res, next) => {
+async function updateEmployeeHandler(req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) {
   const emp = await prisma.employee.findUnique({ where: { id: req.params.id }, include: { user: true } });
   if (!emp) return next(NotFound('עובד לא נמצא'));
 
@@ -193,7 +194,10 @@ router.patch('/:id', requireAuth, requireRole('ADMIN'), validate(updateEmployeeS
   }
   await auditFromReq(req, 'employee.update', 'Employee', updated.id, before, updated);
   res.json(updated);
-});
+}
+
+router.patch('/:id', requireAuth, requireRole('ADMIN'), validate(updateEmployeeSchema), updateEmployeeHandler);
+router.put('/:id', requireAuth, requireRole('ADMIN'), validate(updateEmployeeSchema), updateEmployeeHandler);
 
 router.delete('/:id', requireAuth, requireRole('ADMIN'), async (req, res, next) => {
   const emp = await prisma.employee.findUnique({ where: { id: req.params.id } });

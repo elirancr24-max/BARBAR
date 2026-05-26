@@ -26,7 +26,16 @@ interface Row {
   method: string | null;
 }
 
-interface BarberRow { name: string; revenue: number; tips: number; count: number; }
+interface BarberRow {
+  employeeId?: string;
+  name: string;
+  revenue: number;
+  tips: number;
+  count: number;
+  commissionPct?: number;
+  commissionAgorot?: number;
+  payoutAgorot?: number;
+}
 
 interface Report {
   date: string;
@@ -34,6 +43,8 @@ interface Report {
   byStatus: Record<string, number>;
   totalRevenueAgorot: number;
   totalTipsAgorot: number;
+  totalPayoutAgorot?: number;
+  defaultCommissionPct?: number;
   byMethod: Record<string, number>;
   byBarber: BarberRow[];
   appointments: Row[];
@@ -60,6 +71,17 @@ export default function EndOfDayPage() {
     queryKey: ['end-of-day', date],
     queryFn: async () => (await api.get<Report>('/reports/end-of-day', { params: { date } })).data,
   });
+
+  async function downloadCommissionCSV() {
+    const res = await api.get('/reports/end-of-day.csv', { params: { date }, responseType: 'blob' });
+    const blob = res.data as Blob;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `end-of-day-commissions-${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   function exportCSV() {
     if (!data) return;
@@ -103,6 +125,9 @@ export default function EndOfDayPage() {
           </Button>
           <Button variant="outline" size="sm" onClick={exportCSV} className="print:hidden">
             <FileSpreadsheet className="w-4 h-4 ms-1" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={downloadCommissionCSV} className="print:hidden">
+            <FileSpreadsheet className="w-4 h-4 ms-1" /> הורד CSV (עמלות)
           </Button>
         </div>
 
@@ -212,6 +237,61 @@ export default function EndOfDayPage() {
                 </span>
               ))}
             </div>
+
+            {/* Commission table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  עמלות וטיפים לפי ספר
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {data.byBarber.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-4 text-center">אין נתונים</div>
+                ) : (
+                  <div className="overflow-x-auto -mx-6 px-6">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-xs text-muted-foreground uppercase border-b">
+                          <th className="text-start py-2 pe-3">ספר</th>
+                          <th className="text-end py-2 px-3">תורים</th>
+                          <th className="text-end py-2 px-3">הכנסות</th>
+                          <th className="text-end py-2 px-3">טיפים</th>
+                          <th className="text-end py-2 px-3">אחוז עמלה</th>
+                          <th className="text-end py-2 px-3">עמלה</th>
+                          <th className="text-end py-2 ps-3">סך לתשלום</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {data.byBarber.map((b) => (
+                          <tr key={b.name} className="hover:bg-accent/30">
+                            <td className="py-2.5 pe-3 font-medium">{b.name}</td>
+                            <td className="py-2.5 px-3 text-end tabular-nums">{b.count}</td>
+                            <td className="py-2.5 px-3 text-end tabular-nums">{formatAgorot(b.revenue)}</td>
+                            <td className="py-2.5 px-3 text-end tabular-nums">{formatAgorot(b.tips)}</td>
+                            <td className="py-2.5 px-3 text-end tabular-nums">{b.commissionPct ?? 0}%</td>
+                            <td className="py-2.5 px-3 text-end tabular-nums">{formatAgorot(b.commissionAgorot ?? 0)}</td>
+                            <td className="py-2.5 ps-3 text-end font-bold text-primary tabular-nums">{formatAgorot(b.payoutAgorot ?? 0)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-primary/40 font-semibold">
+                          <td className="py-2.5 pe-3">סה״כ</td>
+                          <td className="py-2.5 px-3 text-end tabular-nums">{data.byBarber.reduce((s, b) => s + b.count, 0)}</td>
+                          <td className="py-2.5 px-3 text-end tabular-nums">{formatAgorot(data.byBarber.reduce((s, b) => s + b.revenue, 0))}</td>
+                          <td className="py-2.5 px-3 text-end tabular-nums">{formatAgorot(data.byBarber.reduce((s, b) => s + b.tips, 0))}</td>
+                          <td className="py-2.5 px-3 text-end tabular-nums">—</td>
+                          <td className="py-2.5 px-3 text-end tabular-nums">{formatAgorot(data.byBarber.reduce((s, b) => s + (b.commissionAgorot ?? 0), 0))}</td>
+                          <td className="py-2.5 ps-3 text-end text-primary tabular-nums">{formatAgorot(data.totalPayoutAgorot ?? 0)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Full table */}
             <Card>
