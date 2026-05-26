@@ -1,13 +1,46 @@
 import { prisma } from '../../lib/prisma';
 
-function normalizePhone(phone: string): string {
-  let p = phone.replace(/[^\d]/g, '');
-  if (p.startsWith('0')) p = '972' + p.slice(1);
-  return p;
+/**
+ * Pure phone normalizer for Israeli numbers — returns digits-only with country code,
+ * or null if the input cannot be normalized to a valid 11-12 digit number.
+ *
+ * Rules:
+ *  - Strip whitespace, hyphens, parentheses, periods.
+ *  - Leading "+972" -> "972"
+ *  - Leading "00972" -> "972"
+ *  - Leading "0" (Israeli local) -> "972"
+ *  - Already starts with "972" -> leave as-is
+ *  - Result must be 11-12 digits, else null.
+ */
+export function normalizePhone(input: string): string | null {
+  if (typeof input !== 'string') return null;
+  // Strip spaces, hyphens, parens, periods (keep + and digits temporarily)
+  const cleaned = input.replace(/[\s\-().]/g, '');
+  // Determine prefix transformations on the cleaned (possibly with leading +) string
+  let digits: string;
+  if (cleaned.startsWith('+972')) {
+    digits = '972' + cleaned.slice(4).replace(/\D/g, '');
+  } else if (cleaned.startsWith('00972')) {
+    digits = '972' + cleaned.slice(5).replace(/\D/g, '');
+  } else {
+    const onlyDigits = cleaned.replace(/\D/g, '');
+    if (onlyDigits.startsWith('972')) {
+      digits = onlyDigits;
+    } else if (onlyDigits.startsWith('0')) {
+      digits = '972' + onlyDigits.slice(1);
+    } else {
+      digits = onlyDigits;
+    }
+  }
+  if (!/^\d+$/.test(digits)) return null;
+  if (digits.length < 11 || digits.length > 12) return null;
+  return digits;
 }
 
 export function buildWhatsAppUrl(phone: string, message: string): string {
-  return `https://wa.me/${normalizePhone(phone)}?text=${encodeURIComponent(message)}`;
+  const normalized = normalizePhone(phone);
+  if (!normalized) return '';
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
 
 function formatDateHebrew(date: Date): string {

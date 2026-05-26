@@ -170,6 +170,7 @@ model Appointment {
   @@index([customerId, startAt])
   @@index([status])
   @@index([confirmationCode])
+  @@index([employeeId, status, startAt])
 }
 
 model AppointmentPhoto {

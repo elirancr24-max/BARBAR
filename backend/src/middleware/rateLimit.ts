@@ -22,6 +22,15 @@ export const generalLimiter = rateLimit({
   ...withStore(),
 });
 
+export const publicLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { code: 'TOO_MANY', message: 'יותר מדי בקשות, נסה שוב בעוד דקה' } },
+  ...withStore(),
+});
+
 export const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,

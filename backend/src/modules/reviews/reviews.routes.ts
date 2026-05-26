@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { auditFromReq } from '../../middleware/audit';
 import { NotFound, BadRequest, Conflict } from '../../lib/errors';
+import { publicLimiter } from '../../middleware/rateLimit';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ const createSchema = z.object({
 });
 
 // POST /reviews (PUBLIC)
-router.post('/', validate(createSchema), async (req, res, next) => {
+router.post('/', publicLimiter, validate(createSchema), async (req, res, next) => {
   const { appointmentCode, rating, comment } = req.body as z.infer<typeof createSchema>;
   const a = await prisma.appointment.findUnique({
     where: { confirmationCode: appointmentCode },
