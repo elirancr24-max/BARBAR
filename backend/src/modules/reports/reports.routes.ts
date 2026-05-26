@@ -1,8 +1,101 @@
 import { Router } from 'express';
 import { prisma } from '../../lib/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
+import { toCsv } from '../../lib/csv';
 
 const router = Router();
+
+// Loads end-of-day data with per-barber commission + payout.
+// Tolerates BusinessSettings model not yet existing in this branch.
+async function loadEndOfDay(day: Date) {
+  const start = new Date(day); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 1);
+
+  let defaultCommissionPct = 0;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const settings = await (prisma as any).businessSettings?.findFirst?.();
+    if (settings && typeof settings.defaultCommissionPct === 'number') {
+      defaultCommissionPct = settings.defaultCommissionPct;
+    }
+  } catch { /* model not present yet — fall back to 0 */ }
+
+  const [appts, payments] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { startAt: { gte: start, lt: end } },
+      include: {
+        service: true,
+        employee: { include: { user: { select: { fullName: true } } } },
+        customer: { select: { fullName: true, phone: true } },
+        payment: true,
+      },
+      orderBy: { startAt: 'asc' },
+    }),
+    prisma.payment.findMany({
+      where: { paidAt: { gte: start, lt: end }, status: 'PAID' },
+      include: { appointment: { include: { employee: { include: { user: { select: { fullName: true } } } } } } },
+    }),
+  ]);
+
+  const byStatus: Record<string, number> = {};
+  let totalRevenue = 0;
+  let totalTips = 0;
+  const byMethod: Record<string, number> = {};
+  const byBarberMap: Record<string, { employeeId: string; name: string; revenue: number; tips: number; count: number }> = {};
+
+  for (const a of appts) byStatus[a.status] = (byStatus[a.status] || 0) + 1;
+
+  for (const p of payments) {
+    totalRevenue += p.amountAgorot;
+    totalTips += p.tipAgorot;
+    const m = p.method || 'unknown';
+    byMethod[m] = (byMethod[m] || 0) + p.amountAgorot;
+
+    const empId = p.appointment.employeeId;
+    const name = p.appointment.employee.user.fullName;
+    if (!byBarberMap[empId]) byBarberMap[empId] = { employeeId: empId, name, revenue: 0, tips: 0, count: 0 };
+    byBarberMap[empId].revenue += p.amountAgorot;
+    byBarberMap[empId].tips += p.tipAgorot;
+    byBarberMap[empId].count += 1;
+  }
+
+  // Fetch per-employee commission overrides
+  const employeeIds = Object.keys(byBarberMap);
+  const commissionByEmp: Record<string, number | null> = {};
+  if (employeeIds.length > 0) {
+    try {
+      const emps = await prisma.employee.findMany({
+        where: { id: { in: employeeIds } },
+        select: { id: true, commissionPct: true },
+      });
+      for (const e of emps) {
+        commissionByEmp[e.id] = e.commissionPct ?? null;
+      }
+    } catch { /* commissionPct column not migrated yet */ }
+  }
+
+  let totalPayout = 0;
+  const byBarber = Object.values(byBarberMap).map((b) => {
+    const commissionPct = commissionByEmp[b.employeeId] ?? defaultCommissionPct ?? 0;
+    const commissionAgorot = Math.round((b.revenue * commissionPct) / 100);
+    const payoutAgorot = commissionAgorot + b.tips;
+    totalPayout += payoutAgorot;
+    return { ...b, commissionPct, commissionAgorot, payoutAgorot };
+  });
+
+  return {
+    date: start.toISOString().slice(0, 10),
+    start, end, appts,
+    totalAppointments: appts.length,
+    byStatus,
+    totalRevenueAgorot: totalRevenue,
+    totalTipsAgorot: totalTips,
+    totalPayoutAgorot: totalPayout,
+    defaultCommissionPct,
+    byMethod,
+    byBarber,
+  };
+}
 
 router.use(requireAuth, requireRole('ADMIN'));
 
@@ -76,57 +169,18 @@ router.get('/busy-hours', async (_req, res) => {
 
 router.get('/end-of-day', async (req, res) => {
   const day = req.query.date ? new Date(req.query.date as string) : new Date();
-  const start = new Date(day); start.setHours(0, 0, 0, 0);
-  const end = new Date(start); end.setDate(end.getDate() + 1);
-
-  const [appts, payments] = await Promise.all([
-    prisma.appointment.findMany({
-      where: { startAt: { gte: start, lt: end } },
-      include: {
-        service: true,
-        employee: { include: { user: { select: { fullName: true } } } },
-        customer: { select: { fullName: true, phone: true } },
-        payment: true,
-      },
-      orderBy: { startAt: 'asc' },
-    }),
-    prisma.payment.findMany({
-      where: { paidAt: { gte: start, lt: end }, status: 'PAID' },
-      include: { appointment: { include: { employee: { include: { user: { select: { fullName: true } } } } } } },
-    }),
-  ]);
-
-  const byStatus: Record<string, number> = {};
-  let totalRevenue = 0;
-  let totalTips = 0;
-  const byMethod: Record<string, number> = {};
-  const byBarber: Record<string, { name: string; revenue: number; tips: number; count: number }> = {};
-
-  for (const a of appts) byStatus[a.status] = (byStatus[a.status] || 0) + 1;
-
-  for (const p of payments) {
-    totalRevenue += p.amountAgorot;
-    totalTips += p.tipAgorot;
-    const m = p.method || 'unknown';
-    byMethod[m] = (byMethod[m] || 0) + p.amountAgorot;
-
-    const empId = p.appointment.employeeId;
-    const name = p.appointment.employee.user.fullName;
-    if (!byBarber[empId]) byBarber[empId] = { name, revenue: 0, tips: 0, count: 0 };
-    byBarber[empId].revenue += p.amountAgorot;
-    byBarber[empId].tips += p.tipAgorot;
-    byBarber[empId].count += 1;
-  }
-
+  const data = await loadEndOfDay(day);
   res.json({
-    date: start.toISOString().slice(0, 10),
-    totalAppointments: appts.length,
-    byStatus,
-    totalRevenueAgorot: totalRevenue,
-    totalTipsAgorot: totalTips,
-    byMethod,
-    byBarber: Object.values(byBarber),
-    appointments: appts.map((a) => ({
+    date: data.date,
+    totalAppointments: data.totalAppointments,
+    byStatus: data.byStatus,
+    totalRevenueAgorot: data.totalRevenueAgorot,
+    totalTipsAgorot: data.totalTipsAgorot,
+    totalPayoutAgorot: data.totalPayoutAgorot,
+    defaultCommissionPct: data.defaultCommissionPct,
+    byMethod: data.byMethod,
+    byBarber: data.byBarber,
+    appointments: data.appts.map((a) => ({
       id: a.id,
       time: a.startAt,
       customer: a.customer.fullName,
@@ -140,6 +194,45 @@ router.get('/end-of-day', async (req, res) => {
       method: a.payment?.method ?? null,
     })),
   });
+});
+
+router.get('/end-of-day.csv', async (req, res) => {
+  const day = req.query.date ? new Date(req.query.date as string) : new Date();
+  const data = await loadEndOfDay(day);
+
+  const rows: (string | number)[][] = [
+    ['ספר', 'תורים', 'הכנסות (₪)', 'טיפים (₪)', 'אחוז עמלה', 'עמלה (₪)', 'סך לתשלום (₪)'],
+  ];
+  for (const b of data.byBarber) {
+    rows.push([
+      b.name,
+      b.count,
+      (b.revenue / 100).toFixed(2),
+      (b.tips / 100).toFixed(2),
+      `${b.commissionPct}%`,
+      (b.commissionAgorot / 100).toFixed(2),
+      (b.payoutAgorot / 100).toFixed(2),
+    ]);
+  }
+  // Totals row
+  const totalRev = data.byBarber.reduce((s, b) => s + b.revenue, 0);
+  const totalTip = data.byBarber.reduce((s, b) => s + b.tips, 0);
+  const totalCount = data.byBarber.reduce((s, b) => s + b.count, 0);
+  const totalCommission = data.byBarber.reduce((s, b) => s + b.commissionAgorot, 0);
+  rows.push([
+    'סה״כ',
+    totalCount,
+    (totalRev / 100).toFixed(2),
+    (totalTip / 100).toFixed(2),
+    '',
+    (totalCommission / 100).toFixed(2),
+    (data.totalPayoutAgorot / 100).toFixed(2),
+  ]);
+
+  const csv = toCsv(rows);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="end-of-day-${data.date}.csv"`);
+  res.send(csv);
 });
 
 router.get('/birthdays', async (_req, res) => {

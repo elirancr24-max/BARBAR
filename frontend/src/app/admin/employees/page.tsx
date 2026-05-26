@@ -16,6 +16,7 @@ interface Employee {
   id: string;
   color: string;
   bio?: string | null;
+  commissionPct?: number | null;
   user: { id: string; fullName: string; email: string; phone: string };
 }
 
@@ -52,6 +53,19 @@ export default function EmployeesPage() {
     },
   });
 
+  const commissionMut = useMutation({
+    mutationFn: async ({ id, commissionPct }: { id: string; commissionPct: number | null }) =>
+      (await api.put(`/employees/${id}`, { commissionPct })).data,
+    onSuccess: () => {
+      toast.success('אחוז עמלה עודכן');
+      qc.invalidateQueries({ queryKey: ['employees-admin'] });
+    },
+    onError: (e: unknown) => {
+      const err = e as { response?: { data?: { error?: { message?: string } } } };
+      toast.error(err.response?.data?.error?.message || 'שגיאה');
+    },
+  });
+
   return (
     <>
       <TopBar title="ניהול ספרים" />
@@ -84,21 +98,42 @@ export default function EmployeesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {employees.map((e) => (
             <Card key={e.id}>
-              <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white" style={{ background: e.color }}>
-                  {e.user.fullName.charAt(0)}
+              <CardContent className="p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white" style={{ background: e.color }}>
+                    {e.user.fullName.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold">{e.user.fullName}</div>
+                    <div className="text-sm text-muted-foreground">{e.user.email}</div>
+                    <div className="text-sm text-muted-foreground">{e.user.phone}</div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={async () => {
+                    const ok = await confirm({ title: 'להסיר ספר זה?', description: 'הספר יוסר מהמערכת.', confirmText: 'כן, הסר', variant: 'destructive' });
+                    if (ok) deleteMut.mutate(e.id);
+                  }}>
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
                 </div>
-                <div className="flex-1">
-                  <div className="font-semibold">{e.user.fullName}</div>
-                  <div className="text-sm text-muted-foreground">{e.user.email}</div>
-                  <div className="text-sm text-muted-foreground">{e.user.phone}</div>
+                <div className="flex items-center gap-2 border-t pt-3">
+                  <Label className="text-xs whitespace-nowrap">אחוז עמלה</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    defaultValue={e.commissionPct ?? ''}
+                    placeholder="ברירת מחדל"
+                    className="h-8 w-24 text-sm tabular-nums"
+                    onBlur={(ev) => {
+                      const raw = ev.target.value.trim();
+                      const current = e.commissionPct ?? null;
+                      const next = raw === '' ? null : Math.max(0, Math.min(100, Math.round(Number(raw))));
+                      if (next === current) return;
+                      commissionMut.mutate({ id: e.id, commissionPct: next });
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={async () => {
-                  const ok = await confirm({ title: 'להסיר ספר זה?', description: 'הספר יוסר מהמערכת.', confirmText: 'כן, הסר', variant: 'destructive' });
-                  if (ok) deleteMut.mutate(e.id);
-                }}>
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
               </CardContent>
             </Card>
           ))}

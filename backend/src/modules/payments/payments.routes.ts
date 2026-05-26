@@ -13,7 +13,10 @@ const router = Router();
 router.post(
   '/charge',
   requireAuth,
-  validate(z.object({ appointmentId: z.string() })),
+  validate(z.object({
+    appointmentId: z.string(),
+    tipAgorot: z.number().int().min(0).optional(),
+  })),
   async (req, res, next) => {
     const a = await prisma.appointment.findUnique({
       where: { id: req.body.appointmentId },
@@ -21,10 +24,11 @@ router.post(
     });
     if (!a) return next(NotFound('תור לא נמצא'));
 
+    const tipAgorot = Number(req.body.tipAgorot) || 0;
     const provider = getPaymentProvider();
     const result = await provider.charge({
       appointmentId: a.id,
-      amountAgorot: a.priceAgorot,
+      amountAgorot: a.priceAgorot + tipAgorot,
       customerEmail: a.customer.email,
       customerPhone: a.customer.phone,
       description: a.service.name,
@@ -35,12 +39,14 @@ router.post(
       create: {
         appointmentId: a.id,
         amountAgorot: a.priceAgorot,
+        tipAgorot,
         provider: provider.name,
         providerRef: result.providerRef,
         status: provider.name === 'mock' ? 'PAID' : 'PENDING',
         paidAt: provider.name === 'mock' ? new Date() : null,
       },
       update: {
+        tipAgorot,
         provider: provider.name,
         providerRef: result.providerRef,
         status: provider.name === 'mock' ? 'PAID' : 'PENDING',
